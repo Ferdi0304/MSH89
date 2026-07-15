@@ -1,14 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 
 const HOTELS = [
-  { id: 1, name: "Hotel Alpina Deluxe", city: "Zermatt", country: "Schweiz", price: 189, originalPrice: 280, rating: 4.8, reviews: 1243, img: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80", tags: ["Wellness", "Berge", "Spa"], lastMinute: true, nomad: false, cat: "wellness" },
-  { id: 2, name: "The Urban Nomad Hub", city: "Berlin", country: "Deutschland", price: 79, originalPrice: 79, rating: 4.6, reviews: 892, img: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&q=80", tags: ["Nomad", "Design", "Coworking"], lastMinute: false, nomad: true, cat: "nomad" },
-  { id: 3, name: "Boutique Riviera", city: "Nizza", country: "Frankreich", price: 134, originalPrice: 210, rating: 4.9, reviews: 567, img: "https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=800&q=80", tags: ["Meer", "Design", "Luxus"], lastMinute: true, nomad: false, cat: "design" },
-  { id: 4, name: "Nomad Base Vienna", city: "Wien", country: "Oesterreich", price: 65, originalPrice: 65, rating: 4.5, reviews: 445, img: "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&q=80", tags: ["Nomad", "Zentral", "Budget"], lastMinute: false, nomad: true, cat: "nomad" },
-  { id: 5, name: "Palazzo Venezia", city: "Venedig", country: "Italien", price: 245, originalPrice: 390, rating: 4.9, reviews: 2100, img: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&q=80", tags: ["Luxus", "Romantik", "Spa"], lastMinute: true, nomad: false, cat: "luxury" },
-  { id: 6, name: "Schwarzwald Retreat", city: "Freiburg", country: "Deutschland", price: 112, originalPrice: 155, rating: 4.7, reviews: 334, img: "https://images.unsplash.com/photo-1445019980597-93fa8acb246c?w=800&q=80", tags: ["Wellness", "Natur", "Ruhe"], lastMinute: true, nomad: false, cat: "wellness" },
-  { id: 7, name: "Rooftop Loft Barcelona", city: "Barcelona", country: "Spanien", price: 98, originalPrice: 98, rating: 4.7, reviews: 1567, img: "https://images.unsplash.com/photo-1586611292717-f828b167408c?w=800&q=80", tags: ["Design", "Nomad", "Rooftop"], lastMinute: false, nomad: true, cat: "design" },
-  { id: 8, name: "Alpine Spa Resort", city: "Innsbruck", country: "Oesterreich", price: 167, originalPrice: 220, rating: 4.8, reviews: 789, img: "https://images.unsplash.com/photo-1540541338537-1220059af4dc?w=800&q=80", tags: ["Wellness", "Spa", "Berge"], lastMinute: true, nomad: false, cat: "wellness" },
+  { id: 1, name: "Mont Cervin Palace", city: "Zermatt", country: "Schweiz", price: 320, originalPrice: 480, rating: 4.8, reviews: 1243, img: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80", tags: ["Wellness", "Berge", "Luxus"], lastMinute: true, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/ch/mont-cervin-palace.de.html" },
+  { id: 2, name: "25hours Hotel Bikini Berlin", city: "Berlin", country: "Deutschland", price: 119, originalPrice: 119, rating: 4.6, reviews: 3892, img: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&q=80", tags: ["Nomad", "Design", "Zentral"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/de/25hours-bikini-berlin.de.html" },
+  { id: 3, name: "Hotel Negresco", city: "Nizza", country: "Frankreich", price: 280, originalPrice: 420, rating: 4.7, reviews: 2156, img: "https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=800&q=80", tags: ["Meer", "Luxus", "Historisch"], lastMinute: true, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/fr/negresco.de.html" },
+  { id: 4, name: "25hours Hotel beim MuseumsQuartier", city: "Wien", country: "Oesterreich", price: 89, originalPrice: 89, rating: 4.5, reviews: 2445, img: "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&q=80", tags: ["Nomad", "Design", "Zentral"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/at/25hours-beim-museumsquartier.de.html" },
+  { id: 5, name: "Gritti Palace Venice", city: "Venedig", country: "Italien", price: 650, originalPrice: 950, rating: 4.9, reviews: 1876, img: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&q=80", tags: ["Luxus", "Romantik", "Historisch"], lastMinute: true, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/it/the-gritti-palace.de.html" },
+  { id: 6, name: "Dollenberg Relais & Chateaux", city: "Bad Peterstal", country: "Deutschland", price: 195, originalPrice: 260, rating: 4.8, reviews: 1334, img: "https://images.unsplash.com/photo-1445019980597-93fa8acb246c?w=800&q=80", tags: ["Wellness", "Spa", "Natur"], lastMinute: true, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/de/dollenberg.de.html" },
+  { id: 7, name: "Casa Camper Barcelona", city: "Barcelona", country: "Spanien", price: 145, originalPrice: 145, rating: 4.7, reviews: 2891, img: "https://images.unsplash.com/photo-1586611292717-f828b167408c?w=800&q=80", tags: ["Design", "Nomad", "Zentral"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/es/casa-camper-barcelona.de.html" },
+  { id: 8, name: "Interalpen-Hotel Tyrol", city: "Telfs", country: "Oesterreich", price: 280, originalPrice: 380, rating: 4.9, reviews: 2134, img: "https://images.unsplash.com/photo-1540541338537-1220059af4dc?w=800&q=80", tags: ["Wellness", "Spa", "Berge"], lastMinute: true, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/at/interalpen-hotel-tyrol.de.html" },
 ];
 
 const ACCENT = "#C9960C";
@@ -37,7 +37,7 @@ const css = `
 
 function HotelCard({ hotel, highlight }) {
   const disc = Math.round((1 - hotel.price / hotel.originalPrice) * 100);
-  const url = "https://www.booking.com/searchresults.html?ss=" + encodeURIComponent(hotel.city) + "&aid=DEINE_AFFILIATE_ID";
+  const url = hotel.url + "?aid=DEINE_AFFILIATE_ID";
   return (
     <div className="card" style={{ background: "#fff", border: "1px solid " + (highlight ? ACCENT : BORDER), borderRadius: 16, overflow: "hidden", boxShadow: highlight ? "0 0 0 2px " + ACCENT + "22" : "0 2px 8px rgba(0,0,0,0.06)" }}>
       <div style={{ position: "relative", height: 190 }}>

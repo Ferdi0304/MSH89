@@ -116,11 +116,12 @@ function AIChat() {
   var [loading, setLoading] = useState(false);
   var [suggested, setSuggested] = useState([]);
   var [searchLink, setSearchLink] = useState(null);
+  var [external, setExternal] = useState([]);
   var bottomRef = useRef(null);
 
   useEffect(function() {
     if (bottomRef.current) bottomRef.current.scrollIntoView({ behavior: "smooth" });
-  }, [msgs, loading, suggested, searchLink]);
+  }, [msgs, loading, suggested, searchLink, external]);
 
   var send = async function() {
     if (!input.trim() || loading) return;
@@ -130,6 +131,7 @@ function AIChat() {
     setLoading(true);
     setSuggested([]);
     setSearchLink(null);
+    setExternal([]);
 
     var hotelContext = HOTELS.map(function(h) {
       return "ID:" + h.id + " | " + h.name + " | " + h.city + ", " + h.country + " | EUR" + h.price + "/Nacht | Tags: " + h.tags.join(", ") + " | LastMinute:" + h.lastMinute + " | Nomad:" + h.nomad + " | Kategorie:" + h.cat;
@@ -144,7 +146,7 @@ function AIChat() {
         body: JSON.stringify({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 600,
-          system: "Du bist ein erfahrener Hotel-Concierge auf MySpecialHotel.com. Antworte immer auf Deutsch. Sei warm, konkret und hilfreich.\n\nUnsere kuratierten Hotels:\n" + hotelContext + "\n\nDU HAST ZWEI MOEGLICHKEITEN:\n\n1) Passt ein kuratiertes Hotel? Dann nenne es und schreibe am Ende: [HOTELS:1,3]\n\n2) Passt keines oder der Nutzer will woanders hin? Nutze dein Wissen ueber echte Hotels weltweit! Empfehle 2-3 konkrete, real existierende Haeuser mit Namen und erklaere kurz warum. Schreibe dann am Ende einen Suchbefehl:\n[SUCHE:ort=Lissabon;maxPreis=150;erwachsene=2]\nFelder (alle optional ausser ort): ort, maxPreis, erwachsene, checkin (JJJJ-MM-TT), checkout\n\nDu kannst auch beides kombinieren. Nutze IMMER einen der beiden Befehle, damit der Nutzer buchen kann. Halte dich kurz - maximal 6 Saetze.",
+          system: "Du bist ein erfahrener Hotel-Concierge auf MySpecialHotel.com. Antworte immer auf Deutsch, warm und konkret. Nutze KEIN Markdown (keine Sternchen).\n\nUnsere kuratierten Hotels:\n" + hotelContext + "\n\nSO ANTWORTEST DU:\n\nPasst ein kuratiertes Hotel? Nenne es und schreibe am Ende: [HOTELS:1,3]\n\nPasst keines? Nutze dein Wissen ueber echte Hotels weltweit. Empfehle 2-3 konkrete, real existierende Haeuser. Schreibe am Ende fuer JEDES empfohlene Hotel eine Zeile:\n[HOTEL:Hotelname|Stadt, Land]\n\nBeispiel:\n[HOTEL:The Twelve Apostles Hotel and Spa|Kapstadt, Suedafrika]\n[HOTEL:Birkenhead House|Hermanus, Suedafrika]\n\nOptional zusaetzlich eine allgemeine Suche:\n[SUCHE:ort=Kapstadt;maxPreis=300;erwachsene=2]\n\nHalte den Text kurz - maximal 5 Saetze. Die Buttons erscheinen automatisch.",
           messages: [{ role: "user", content: q }]
         })
       });
@@ -161,6 +163,17 @@ function AIChat() {
         setSuggested(HOTELS.filter(function(h) { return ids.indexOf(h.id) !== -1; }));
       }
 
+      var hotelMatches = fullText.match(/\[HOTEL:[^\]]+\]/g);
+      if (hotelMatches) {
+        setExternal(hotelMatches.map(function(m) {
+          var body = m.slice(7, -1);
+          var parts = body.split("|");
+          var name = (parts[0] || "").trim();
+          var ort = (parts[1] || "").trim();
+          return { name: name, ort: ort, url: searchUrl({ ort: name + " " + ort }) };
+        }));
+      }
+
       var sMatch = fullText.match(/\[SUCHE:([^\]]+)\]/);
       if (sMatch) {
         var params = {};
@@ -171,7 +184,13 @@ function AIChat() {
         if (params.ort) setSearchLink({ url: searchUrl(params), ort: params.ort });
       }
 
-      var cleanText = fullText.replace(/\[HOTELS:[\d,]+\]/g, "").replace(/\[SUCHE:[^\]]+\]/g, "").trim();
+      var cleanText = fullText
+        .replace(/\[HOTELS:[\d,]+\]/g, "")
+        .replace(/\[SUCHE:[^\]]+\]/g, "")
+        .replace(/\[HOTEL:[^\]]+\]/g, "")
+        .replace(/\*\*/g, "")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
       setMsgs(function(p) { return [...p, { role: "assistant", text: cleanText }]; });
 
     } catch(err) {
@@ -208,6 +227,22 @@ function AIChat() {
           <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 4 }}>
             <div style={{ fontSize: 12, color: ACCENT, fontWeight: 600, fontFamily: "Inter, sans-serif", textTransform: "uppercase", letterSpacing: 1 }}>Passende Hotels fuer dich</div>
             {suggested.map(function(h) { return <HotelCard key={h.id} hotel={h} highlight={true} />; })}
+          </div>
+        )}
+        {external.length > 0 && !loading && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 6 }}>
+            <div style={{ fontSize: 11, color: ACCENT, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>Direkt buchen</div>
+            {external.map(function(h, i) {
+              return (
+                <a key={i} href={h.url} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, background: "#fff", border: "1.5px solid " + BORDER, borderRadius: 14, padding: "14px 16px", textDecoration: "none", transition: "all 0.2s" }} onMouseEnter={function(e){e.currentTarget.style.borderColor=ACCENT;}} onMouseLeave={function(e){e.currentTarget.style.borderColor=BORDER;}}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 15, fontWeight: 700, color: TEXT, marginBottom: 2 }}>{h.name}</div>
+                    <div style={{ fontSize: 12, color: GRAY }}>{h.ort}</div>
+                  </div>
+                  <span className="btn-gold" style={{ padding: "8px 16px", fontSize: 12, whiteSpace: "nowrap", flexShrink: 0 }}>Preise →</span>
+                </a>
+              );
+            })}
           </div>
         )}
         {searchLink && !loading && (

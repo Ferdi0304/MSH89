@@ -1,14 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 
 const HOTELS = [
-  { id: 1, name: "Mont Cervin Palace", city: "Zermatt", country: "Schweiz", price: 320, originalPrice: 480, rating: 4.8, reviews: 1243, img: "https://images.unsplash.com/photo-1531088009183-5ff5b7c95f91?w=800&q=80", tags: ["Wellness", "Berge", "Luxus"], lastMinute: true, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/ch/mont-cervin-palace.de.html" },
-  { id: 2, name: "25hours Hotel Bikini Berlin", city: "Berlin", country: "Deutschland", price: 119, originalPrice: 119, rating: 4.6, reviews: 3892, img: "https://images.unsplash.com/photo-1551016231-30c4a62b4b53?w=800&q=80", tags: ["Nomad", "Design", "Zentral"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/de/25hours-bikini-berlin.de.html" },
-  { id: 3, name: "Hotel Negresco", city: "Nizza", country: "Frankreich", price: 280, originalPrice: 420, rating: 4.7, reviews: 2156, img: "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=800&q=80", tags: ["Meer", "Luxus", "Historisch"], lastMinute: true, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/fr/negresco.de.html" },
-  { id: 4, name: "25hours Hotel MuseumsQuartier", city: "Wien", country: "Oesterreich", price: 89, originalPrice: 89, rating: 4.5, reviews: 2445, img: "https://images.unsplash.com/photo-1603204077779-bed963ea7d0e?w=800&q=80", tags: ["Nomad", "Design", "Zentral"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/at/25hours-beim-museumsquartier.de.html" },
-  { id: 5, name: "Gritti Palace Venice", city: "Venedig", country: "Italien", price: 650, originalPrice: 950, rating: 4.9, reviews: 1876, img: "https://images.unsplash.com/photo-1523906834658-6e24ef2386f9?w=800&q=80", tags: ["Luxus", "Romantik", "Historisch"], lastMinute: true, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/it/the-gritti-palace.de.html" },
-  { id: 6, name: "Dollenberg Relais & Chateaux", city: "Bad Peterstal", country: "Deutschland", price: 195, originalPrice: 260, rating: 4.8, reviews: 1334, img: "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800&q=80", tags: ["Wellness", "Spa", "Natur"], lastMinute: true, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/de/dollenberg.de.html" },
-  { id: 7, name: "Casa Camper Barcelona", city: "Barcelona", country: "Spanien", price: 145, originalPrice: 145, rating: 4.7, reviews: 2891, img: "https://images.unsplash.com/photo-1539037116277-4db20889f2d4?w=800&q=80", tags: ["Design", "Nomad", "Zentral"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/es/casa-camper-barcelona.de.html" },
-  { id: 8, name: "Interalpen-Hotel Tyrol", city: "Telfs", country: "Oesterreich", price: 280, originalPrice: 380, rating: 4.9, reviews: 2134, img: "https://images.unsplash.com/photo-1610641818989-c2051b5e2cfd?w=800&q=80", tags: ["Wellness", "Spa", "Berge"], lastMinute: true, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/at/interalpen-hotel-tyrol.de.html" },
+  { id: 1, name: "Mont Cervin Palace", city: "Zermatt", country: "Schweiz", price: 320, originalPrice: 480, rating: 4.8, reviews: 1243, img: "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&q=80", tags: ["Wellness", "Berge", "Luxus"], lastMinute: true, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/ch/mont-cervin-palace.de.html" },
+  { id: 2, name: "25hours Hotel Bikini Berlin", city: "Berlin", country: "Deutschland", price: 119, originalPrice: 119, rating: 4.6, reviews: 3892, img: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80", tags: ["Nomad", "Design", "Zentral"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/de/25hours-bikini-berlin.de.html" },
+  { id: 3, name: "Hotel Negresco", city: "Nizza", country: "Frankreich", price: 280, originalPrice: 420, rating: 4.7, reviews: 2156, img: "https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=800&q=80", tags: ["Meer", "Luxus", "Historisch"], lastMinute: true, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/fr/negresco.de.html" },
+  { id: 4, name: "25hours Hotel MuseumsQuartier", city: "Wien", country: "Oesterreich", price: 89, originalPrice: 89, rating: 4.5, reviews: 2445, img: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&q=80", tags: ["Nomad", "Design", "Zentral"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/at/25hours-beim-museumsquartier.de.html" },
+  { id: 5, name: "Gritti Palace Venice", city: "Venedig", country: "Italien", price: 650, originalPrice: 950, rating: 4.9, reviews: 1876, img: "https://images.unsplash.com/photo-1541849546-216549ae216d?w=800&q=80", tags: ["Luxus", "Romantik", "Historisch"], lastMinute: true, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/it/the-gritti-palace.de.html" },
+  { id: 6, name: "Dollenberg Relais & Chateaux", city: "Bad Peterstal", country: "Deutschland", price: 195, originalPrice: 260, rating: 4.8, reviews: 1334, img: "https://images.unsplash.com/photo-1445019980597-93fa8acb246c?w=800&q=80", tags: ["Wellness", "Spa", "Natur"], lastMinute: true, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/de/dollenberg.de.html" },
+  { id: 7, name: "Casa Camper Barcelona", city: "Barcelona", country: "Spanien", price: 145, originalPrice: 145, rating: 4.7, reviews: 2891, img: "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800&q=80", tags: ["Design", "Nomad", "Zentral"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/es/casa-camper-barcelona.de.html" },
+  { id: 8, name: "Interalpen-Hotel Tyrol", city: "Telfs", country: "Oesterreich", price: 280, originalPrice: 380, rating: 4.9, reviews: 2134, img: "https://images.unsplash.com/photo-1540541338537-1220059af4dc?w=800&q=80", tags: ["Wellness", "Spa", "Berge"], lastMinute: true, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/at/interalpen-hotel-tyrol.de.html" },
 ];
 
 const ACCENT = "#C9960C";
@@ -19,39 +19,100 @@ const BORDER = "#e5e7eb";
 
 const css = `
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { scroll-behavior: smooth; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
   body { background: #fff; overflow-x: hidden; }
-  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar { width: 4px; height: 0; }
   ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
   input::placeholder { color: #9ca3af !important; }
+  a { text-decoration: none; }
+  button { font-family: Inter, sans-serif; }
+  :focus-visible { outline: 2px solid #C9960C; outline-offset: 2px; }
+
   @keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-5px)} }
   @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
-  .card { transition: all 0.3s cubic-bezier(0.4,0,0.2,1); cursor: pointer; }
+
+  /* ---------- NAV ---------- */
+  .nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(255,255,255,0.96); backdrop-filter: blur(12px);
+    border-bottom: 1px solid #e5e7eb;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; padding: 0 24px; height: 62px;
+  }
+  .nav-logo {
+    font-family: 'Playfair Display', serif; font-size: 21px; font-weight: 900;
+    color: #1a1a2e; background: none; border: none; cursor: pointer;
+    white-space: nowrap; letter-spacing: -0.3px; flex-shrink: 0; padding: 0;
+  }
+  .nav-tabs {
+    display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none;
+    -webkit-overflow-scrolling: touch; min-width: 0;
+  }
+  .nav-tabs::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    background: transparent; border: 1px solid transparent; border-radius: 8px;
+    padding: 8px 13px; color: #6b7280; cursor: pointer; font-size: 13.5px;
+    font-weight: 500; white-space: nowrap; transition: all 0.18s;
+  }
+  .tab-btn:hover { background: #f9fafb; color: #1a1a2e; }
+  .tab-btn.tab-on { background: #FDF6E3; border-color: #e9d06a; color: #C9960C; font-weight: 650; }
+
+  /* ---------- HERO ---------- */
+  .hero {
+    position: relative; overflow: hidden;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 80px 24px 72px; min-height: 78vh;
+  }
+
+  /* ---------- STATS ---------- */
+  .stats {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    border-top: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb;
+    background: #fff; max-width: 900px; margin: 0 auto;
+  }
+  .stat { text-align: center; padding: 20px 8px; }
+  .stat + .stat { border-left: 1px solid #e5e7eb; }
+  .stat-n { font-family: 'Playfair Display', serif; font-size: 21px; font-weight: 700; color: #C9960C; }
+  .stat-l { font-size: 12px; color: #6b7280; margin-top: 3px; }
+
+  /* ---------- CARDS & BUTTONS ---------- */
+  .card { transition: transform 0.3s cubic-bezier(0.4,0,0.2,1), box-shadow 0.3s; }
   .card:hover { transform: translateY(-4px); box-shadow: 0 20px 48px rgba(0,0,0,0.12) !important; }
-  .btn-gold { background: #C9960C; color: #fff; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; font-family: Inter, sans-serif; transition: all 0.2s; letter-spacing: 0.3px; }
-  .btn-gold:hover { background: #b8860b; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(201,150,12,0.4); }
-  .btn-gold:active { transform: translateY(0); }
-  .btn-gold:disabled { background: #d1d5db; cursor: not-allowed; transform: none; box-shadow: none; }
-  .tab-btn { transition: all 0.2s; }
-  .tab-btn:hover { background: #f9fafb !important; }
+  .btn-gold {
+    background: #C9960C; color: #fff; border: none; border-radius: 10px;
+    font-weight: 700; cursor: pointer; transition: all 0.2s; letter-spacing: 0.2px;
+  }
+  .btn-gold:hover { background: #b8860b; box-shadow: 0 4px 14px rgba(201,150,12,0.35); }
+  .btn-gold:active { transform: translateY(1px); }
+  .btn-gold:disabled { background: #d1d5db; cursor: not-allowed; box-shadow: none; }
   .filter-btn { transition: all 0.2s; }
-  .filter-btn:hover { opacity: 0.85; }
-  a { text-decoration: none; }
-  @media (max-width: 768px) {
-    .hero-title { font-size: 38px !important; }
-    .hero-stats { flex-wrap: wrap; gap: 0 !important; }
-    .hero-stats > div { width: 50%; border-left: none !important; border-top: 1px solid #e5e7eb; }
-    .nav-inner { padding: 0 16px !important; }
-    .nav-logo { font-size: 18px !important; }
-    .tab-btn { padding: 6px 10px !important; font-size: 12px !important; }
+
+  /* ---------- MOBILE ---------- */
+  @media (max-width: 820px) {
+    .nav { padding: 0 14px; height: 58px; gap: 8px; }
+    .nav-logo { font-size: 17px; }
+    .tab-btn { padding: 7px 10px; font-size: 12.5px; }
+
+    .hero { padding: 48px 20px 44px; min-height: auto; }
+    .hero-title { font-size: 34px !important; line-height: 1.12 !important; margin-bottom: 16px !important; }
+    .hero p { font-size: 15.5px !important; margin-bottom: 26px !important; }
+    .hero-buttons { flex-direction: column; align-items: stretch; gap: 10px !important; }
+    .hero-buttons button { width: 100%; }
+
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .stat:nth-child(odd) { border-left: none; }
+    .stat:nth-child(n+3) { border-top: 1px solid #e5e7eb; }
+    .stat { padding: 16px 8px; }
+    .stat-n { font-size: 19px; }
+
     .hotel-grid { grid-template-columns: 1fr !important; }
     .nomad-features { grid-template-columns: 1fr !important; }
-    .page-padding { padding: 24px 16px !important; }
-    .hero-buttons { flex-direction: column; align-items: center; }
-    .hero-buttons button { width: 100%; max-width: 300px; }
-    .search-bar { margin: 0 16px 24px !important; }
-    .filter-row { padding: 0 8px; }
-    .footer-inner { padding: 24px 16px !important; }
+    .page-padding { padding-left: 18px !important; padding-right: 18px !important; }
+    .search-bar { margin-bottom: 22px !important; }
+    .world-search { padding: 22px 18px !important; }
+    .section-h { font-size: 25px !important; }
+    .filter-row { gap: 7px !important; margin-bottom: 26px !important; }
+    .footer-inner { padding: 26px 18px !important; }
   }
 `;
 
@@ -290,7 +351,7 @@ function WorldSearch() {
   var inp = { background: "#f9fafb", border: "1px solid " + BORDER, borderRadius: 10, padding: "12px 14px", fontSize: 14, fontFamily: "Inter, sans-serif", color: TEXT, outline: "none", width: "100%" };
 
   return (
-    <div style={{ background: "#fff", border: "1px solid " + BORDER, borderRadius: 20, padding: 32, boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}>
+    <div className="world-search" style={{ background: "#fff", border: "1px solid " + BORDER, borderRadius: 20, padding: 32, boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}>
       <div style={{ textAlign: "center", marginBottom: 24 }}>
         <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 800, color: TEXT, marginBottom: 8 }}>Wohin soll es gehen?</div>
         <div style={{ fontSize: 14, color: GRAY }}>Über 2 Millionen Unterkünfte weltweit durchsuchen</div>
@@ -338,23 +399,23 @@ export default function App() {
     <div style={{ minHeight: "100vh", background: "#fff", color: TEXT, fontFamily: "Inter, sans-serif" }}>
       <style>{css}</style>
 
-      <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(255,255,255,0.97)", backdropFilter: "blur(12px)", borderBottom: "1px solid " + BORDER, padding: "0 32px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 64 }} className="nav-inner">
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 900, color: TEXT }}>
+      <nav className="nav">
+        <button onClick={function() { setTab("home"); }} className="nav-logo">
           My<span style={{ color: ACCENT }}>Special</span>Hotel
-        </div>
-        <div style={{ display: "flex", gap: 4 }}>
+        </button>
+        <div className="nav-tabs">
           {TABS.map(function(item) {
             var id = item[0]; var label = item[1];
-            return <button key={id} onClick={function() { setTab(id); }} className="tab-btn" style={{ background: tab === id ? ACCENT_LIGHT : "transparent", border: tab === id ? "1px solid #e9d06a" : "1px solid transparent", borderRadius: 8, padding: "7px 14px", color: tab === id ? ACCENT : GRAY, cursor: "pointer", fontSize: 13, fontFamily: "Inter, sans-serif", fontWeight: tab === id ? 600 : 400 }}>{label}</button>;
+            return <button key={id} onClick={function() { setTab(id); }} className={"tab-btn" + (tab === id ? " tab-on" : "")}>{label}</button>;
           })}
         </div>
       </nav>
 
       {tab === "home" && (
         <div>
-          <div style={{ position: "relative", minHeight: "85vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "0 24px 80px", overflow: "hidden" }}>
+          <div className="hero">
             <div style={{ position: "absolute", inset: 0, backgroundImage: "url(https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=1600&q=80)", backgroundSize: "cover", backgroundPosition: "center", opacity: 0.12 }} />
-            <div style={{ position: "relative", zIndex: 1, animation: "fadeUp 0.7s ease forwards" }}>
+            <div style={{ position: "relative", zIndex: 1, animation: "fadeUp 0.7s ease forwards", width: "100%" }}>
               <div style={{ display: "inline-block", background: ACCENT_LIGHT, border: "1px solid #e9d06a", borderRadius: 20, padding: "5px 16px", fontSize: 12, color: ACCENT, fontWeight: 600, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 24 }}>Dein smarter Hotel-Begleiter</div>
               <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(38px,7vw,80px)", fontWeight: 900, lineHeight: 1.08, color: TEXT, marginBottom: 20 }} className="hero-title">
                 Dein perfektes<br /><span style={{ color: ACCENT }}>Hotel</span>, jederzeit.
@@ -365,20 +426,20 @@ export default function App() {
                 <button onClick={function() { setTab("deals"); }} style={{ background: "#fff", border: "1.5px solid " + BORDER, borderRadius: 12, padding: "14px 28px", color: TEXT, fontWeight: 600, fontSize: 15, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>Last Minute Deals</button>
               </div>
             </div>
-            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, borderTop: "1px solid " + BORDER, display: "flex", justifyContent: "center", background: "#fff" }} className="hero-stats">
-              {[["8+","Hotels"],["4.7","Bewertung"],["Bis -45%","Ersparnis"],["100%","Kostenlos"]].map(function(item, i) {
-                return <div key={item[1]} style={{ textAlign: "center", padding: "18px 40px", borderLeft: i > 0 ? "1px solid " + BORDER : "none" }}>
-                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: ACCENT }}>{item[0]}</div>
-                  <div style={{ fontSize: 12, color: GRAY, marginTop: 2 }}>{item[1]}</div>
-                </div>;
-              })}
-            </div>
           </div>
-          <div style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 24px 0" }} className="page-padding">
+          <div className="stats">
+            {[["8+","Hotels"],["4.7","Bewertung"],["Bis -45%","Ersparnis"],["100%","Kostenlos"]].map(function(item) {
+              return <div key={item[1]} className="stat">
+                <div className="stat-n">{item[0]}</div>
+                <div className="stat-l">{item[1]}</div>
+              </div>;
+            })}
+          </div>
+          <div style={{ maxWidth: 900, margin: "0 auto", padding: "44px 24px 0" }} className="page-padding">
             <WorldSearch />
           </div>
           <div style={{ maxWidth: 1200, margin: "0 auto", padding: "48px 24px" }} className="page-padding">
-            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 30, fontWeight: 700, color: TEXT, marginBottom: 24, textAlign: "center" }}>Unsere kuratierte Auswahl</h2>
+            <h2 className="section-h" style={{ fontFamily: "'Playfair Display', serif", fontSize: 30, fontWeight: 700, color: TEXT, marginBottom: 24, textAlign: "center", scrollMarginTop: 80 }}>Unsere kuratierte Auswahl</h2>
             <div style={{ maxWidth: 500, margin: "0 auto 28px", position: "relative" }} className="search-bar">
               <input
                 value={search}
@@ -416,7 +477,7 @@ export default function App() {
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "48px 24px" }} className="page-padding">
           <div style={{ textAlign: "center", marginBottom: 48 }}>
             <div style={{ display: "inline-block", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 20, padding: "5px 16px", fontSize: 12, color: "#ef4444", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", marginBottom: 16 }}>Nur begrenzt verfuegbar</div>
-            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 40, fontWeight: 900, color: TEXT }}>Last Minute Deals</h2>
+            <h2 className="section-h" style={{ fontFamily: "'Playfair Display', serif", fontSize: 40, fontWeight: 900, color: TEXT }}>Last Minute Deals</h2>
             <p style={{ color: GRAY, marginTop: 10, fontSize: 16 }}>Die besten Angebote, spontan buchen und sparen</p>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px,1fr))", gap: 20 }} className="hotel-grid">
@@ -434,7 +495,7 @@ export default function App() {
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "48px 24px" }} className="page-padding">
           <div style={{ textAlign: "center", marginBottom: 48 }}>
             <div style={{ display: "inline-block", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 20, padding: "5px 16px", fontSize: 12, color: "#10b981", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", marginBottom: 16 }}>Remote Work Freundlich</div>
-            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 40, fontWeight: 900, color: TEXT }}>Nomad Hotels</h2>
+            <h2 className="section-h" style={{ fontFamily: "'Playfair Display', serif", fontSize: 40, fontWeight: 900, color: TEXT }}>Nomad Hotels</h2>
             <p style={{ color: GRAY, marginTop: 10, fontSize: 16 }}>Gigabit WLAN - Coworking - Dedizierte Arbeitsbereiche</p>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px,1fr))", gap: 20, marginBottom: 40, background: "#f9fafb", borderRadius: 16, padding: 28, border: "1px solid " + BORDER }} className="nomad-features">
@@ -455,7 +516,7 @@ export default function App() {
       {tab === "ai" && (
         <div style={{ maxWidth: 780, margin: "0 auto", padding: 24, height: "calc(100vh - 64px)", display: "flex", flexDirection: "column" }}>
           <div style={{ textAlign: "center", marginBottom: 20 }}>
-            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 30, fontWeight: 900, color: TEXT }}>KI Hotel-Berater</h2>
+            <h2 className="section-h" style={{ fontFamily: "'Playfair Display', serif", fontSize: 30, fontWeight: 900, color: TEXT }}>KI Hotel-Berater</h2>
             <p style={{ color: GRAY, fontSize: 14, marginTop: 6 }}>Beschreib deinen Traumurlaub, ich empfehle das perfekte Hotel</p>
           </div>
           <div style={{ flex: 1, background: "#fff", border: "1.5px solid " + BORDER, borderRadius: 20, overflow: "hidden", display: "flex", flexDirection: "column", minHeight: 0, boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
@@ -467,7 +528,7 @@ export default function App() {
       {tab === "impressum" && (
         <div style={{ maxWidth: 800, margin: "0 auto", padding: "48px 24px" }}>
           <button onClick={function() { setTab("home"); }} style={{ marginBottom: 24, background: "none", border: "1px solid " + BORDER, borderRadius: 8, padding: "8px 16px", cursor: "pointer", color: GRAY, fontFamily: "Inter, sans-serif", fontSize: 13 }}>← Zurück</button>
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 36, fontWeight: 900, color: TEXT, marginBottom: 32 }}>Impressum</h1>
+          <h1 className="section-h" style={{ fontFamily: "'Playfair Display', serif", fontSize: 36, fontWeight: 900, color: TEXT, marginBottom: 32 }}>Impressum</h1>
           <h2 style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 8 }}>Angaben gemäß § 5 TMG</h2>
           <p style={{ color: GRAY, lineHeight: 2, fontSize: 15 }}>Fernando Arias Texeira<br />Alsbacher Weg 3<br />14163 Berlin<br />Deutschland</p>
           <h2 style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 8, marginTop: 28 }}>Kontakt</h2>
@@ -489,7 +550,7 @@ export default function App() {
       {tab === "datenschutz" && (
         <div style={{ maxWidth: 800, margin: "0 auto", padding: "48px 24px" }}>
           <button onClick={function() { setTab("home"); }} style={{ marginBottom: 24, background: "none", border: "1px solid " + BORDER, borderRadius: 8, padding: "8px 16px", cursor: "pointer", color: GRAY, fontFamily: "Inter, sans-serif", fontSize: 13 }}>← Zurück</button>
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 36, fontWeight: 900, color: TEXT, marginBottom: 32 }}>Datenschutzerklärung</h1>
+          <h1 className="section-h" style={{ fontFamily: "'Playfair Display', serif", fontSize: 36, fontWeight: 900, color: TEXT, marginBottom: 32 }}>Datenschutzerklärung</h1>
           <h2 style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 8 }}>1. Verantwortlicher</h2>
           <p style={{ color: GRAY, lineHeight: 2, fontSize: 15 }}>Fernando Arias Texeira<br />Alsbacher Weg 3, 14163 Berlin<br />E-Mail: info@myspecialhotel.com<br />Telefon: +49 163 5946140</p>
           <h2 style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 8, marginTop: 28 }}>2. Hosting (Vercel)</h2>

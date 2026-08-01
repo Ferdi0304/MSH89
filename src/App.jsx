@@ -55,9 +55,27 @@ const css = `
   }
 `;
 
+// === CJ AFFILIATE TRACKING ===
+// Website-ID: 101831910 | Link-ID: 15734849
+const CJ_BASE = "https://www.kqzyfj.com/click-101831910-15734849";
+
+function track(bookingUrl) {
+  return CJ_BASE + "?url=" + encodeURIComponent(bookingUrl);
+}
+
+function searchUrl(params) {
+  var u = "https://www.booking.com/searchresults.de.html?ss=" + encodeURIComponent(params.ort || "");
+  if (params.checkin) u += "&checkin=" + params.checkin;
+  if (params.checkout) u += "&checkout=" + params.checkout;
+  if (params.erwachsene) u += "&group_adults=" + params.erwachsene;
+  if (params.maxPreis) u += "&nflt=price%3DEUR-min-" + params.maxPreis + "-1";
+  u += "&selected_currency=EUR&lang=de";
+  return track(u);
+}
+
 function HotelCard({ hotel, highlight }) {
   const disc = Math.round((1 - hotel.price / hotel.originalPrice) * 100);
-  const url = hotel.url + "?aid=DEINE_AFFILIATE_ID";
+  const url = track(hotel.url);
   return (
     <div className="card" style={{ background: "#fff", border: "1px solid " + (highlight ? ACCENT : BORDER), borderRadius: 16, overflow: "hidden", boxShadow: highlight ? "0 0 0 2px " + ACCENT + "22" : "0 2px 8px rgba(0,0,0,0.06)" }}>
       <div style={{ position: "relative", height: 190 }}>
@@ -92,16 +110,17 @@ function HotelCard({ hotel, highlight }) {
 }
 
 function AIChat() {
-  var initialMsgs = [{ role: "assistant", text: "Hallo! Ich bin dein persoenlicher Hotel-Berater von MySpecialHotel.\n\nBeschreib mir deinen Traumurlaub - Budget, Stimmung, Reiseziel - und ich empfehle das perfekte Hotel fuer dich!" }];
+  var initialMsgs = [{ role: "assistant", text: "Hallo! Ich bin dein persoenlicher Hotel-Concierge von MySpecialHotel.\n\nBeschreib mir deinen Traumurlaub - Reiseziel, Budget, Stimmung - und ich finde das passende Haus fuer dich. Egal ob aus unserer kuratierten Auswahl oder aus dem weltweiten Angebot." }];
   var [msgs, setMsgs] = useState(initialMsgs);
   var [input, setInput] = useState("");
   var [loading, setLoading] = useState(false);
   var [suggested, setSuggested] = useState([]);
+  var [searchLink, setSearchLink] = useState(null);
   var bottomRef = useRef(null);
 
   useEffect(function() {
     if (bottomRef.current) bottomRef.current.scrollIntoView({ behavior: "smooth" });
-  }, [msgs, loading, suggested]);
+  }, [msgs, loading, suggested, searchLink]);
 
   var send = async function() {
     if (!input.trim() || loading) return;
@@ -110,6 +129,7 @@ function AIChat() {
     setMsgs(function(p) { return [...p, { role: "user", text: q }]; });
     setLoading(true);
     setSuggested([]);
+    setSearchLink(null);
 
     var hotelContext = HOTELS.map(function(h) {
       return "ID:" + h.id + " | " + h.name + " | " + h.city + ", " + h.country + " | EUR" + h.price + "/Nacht | Tags: " + h.tags.join(", ") + " | LastMinute:" + h.lastMinute + " | Nomad:" + h.nomad + " | Kategorie:" + h.cat;
@@ -124,7 +144,7 @@ function AIChat() {
         body: JSON.stringify({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 600,
-          system: "Du bist ein freundlicher Hotel-Berater auf MySpecialHotel.com. Antworte immer auf Deutsch. Sei warm, kurz und hilfreich.\n\nVerfuegbare Hotels:\n" + hotelContext + "\n\nWenn du Hotels empfiehlst, schreibe ihre IDs am Ende in diesem Format: [HOTELS:1,3,5]\nEmpfehle maximal 3 Hotels. Erklaere kurz warum sie passen.",
+          system: "Du bist ein erfahrener Hotel-Concierge auf MySpecialHotel.com. Antworte immer auf Deutsch. Sei warm, konkret und hilfreich.\n\nUnsere kuratierten Hotels:\n" + hotelContext + "\n\nDU HAST ZWEI MOEGLICHKEITEN:\n\n1) Passt ein kuratiertes Hotel? Dann nenne es und schreibe am Ende: [HOTELS:1,3]\n\n2) Passt keines oder der Nutzer will woanders hin? Nutze dein Wissen ueber echte Hotels weltweit! Empfehle 2-3 konkrete, real existierende Haeuser mit Namen und erklaere kurz warum. Schreibe dann am Ende einen Suchbefehl:\n[SUCHE:ort=Lissabon;maxPreis=150;erwachsene=2]\nFelder (alle optional ausser ort): ort, maxPreis, erwachsene, checkin (JJJJ-MM-TT), checkout\n\nDu kannst auch beides kombinieren. Nutze IMMER einen der beiden Befehle, damit der Nutzer buchen kann. Halte dich kurz - maximal 6 Saetze.",
           messages: [{ role: "user", content: q }]
         })
       });
@@ -141,7 +161,17 @@ function AIChat() {
         setSuggested(HOTELS.filter(function(h) { return ids.indexOf(h.id) !== -1; }));
       }
 
-      var cleanText = fullText.replace(/\[HOTELS:[\d,]+\]/g, "").trim();
+      var sMatch = fullText.match(/\[SUCHE:([^\]]+)\]/);
+      if (sMatch) {
+        var params = {};
+        sMatch[1].split(";").forEach(function(pair) {
+          var kv = pair.split("=");
+          if (kv.length === 2) params[kv[0].trim()] = kv[1].trim();
+        });
+        if (params.ort) setSearchLink({ url: searchUrl(params), ort: params.ort });
+      }
+
+      var cleanText = fullText.replace(/\[HOTELS:[\d,]+\]/g, "").replace(/\[SUCHE:[^\]]+\]/g, "").trim();
       setMsgs(function(p) { return [...p, { role: "assistant", text: cleanText }]; });
 
     } catch(err) {
@@ -151,7 +181,7 @@ function AIChat() {
     setLoading(false);
   };
 
-  var hints = ["Wellness Hotel Alpen 150 EUR", "Nomad Barcelona", "Last Minute Meer", "Romantik Italien Luxus"];
+  var hints = ["Spa-Hotel Tirol bis 200 EUR", "Boutique Hotel Lissabon", "Strandurlaub Griechenland", "Staedtetrip Kopenhagen"];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
@@ -180,6 +210,13 @@ function AIChat() {
             {suggested.map(function(h) { return <HotelCard key={h.id} hotel={h} highlight={true} />; })}
           </div>
         )}
+        {searchLink && !loading && (
+          <a href={searchLink.url} target="_blank" rel="noopener noreferrer" style={{ display: "block", marginTop: 6, background: ACCENT_LIGHT, border: "1px solid #e9d06a", borderRadius: 14, padding: 16, textDecoration: "none" }}>
+            <div style={{ fontSize: 11, color: ACCENT, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>Alle Unterkuenfte ansehen</div>
+            <div style={{ fontSize: 15, color: TEXT, fontWeight: 600, marginBottom: 4 }}>Verfuegbarkeit in {searchLink.ort} pruefen</div>
+            <div style={{ fontSize: 12, color: GRAY }}>Live-Preise aus ueber 2 Millionen Unterkuenften →</div>
+          </a>
+        )}
         <div ref={bottomRef} />
       </div>
       <div style={{ padding: "14px 20px", borderTop: "1px solid " + BORDER, background: "#fff" }}>
@@ -190,6 +227,44 @@ function AIChat() {
         <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
           {hints.map(function(s) { return <button key={s} onClick={function() { setInput(s); }} style={{ background: ACCENT_LIGHT, border: "1px solid #e9d06a", borderRadius: 16, padding: "4px 12px", color: ACCENT, fontSize: 12, cursor: "pointer", fontFamily: "Inter, sans-serif", fontWeight: 500 }}>{s}</button>; })}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function WorldSearch() {
+  var [ort, setOrt] = useState("");
+  var [checkin, setCheckin] = useState("");
+  var [checkout, setCheckout] = useState("");
+  var [gaeste, setGaeste] = useState(2);
+
+  var go = function() {
+    if (!ort.trim()) return;
+    window.open(searchUrl({ ort: ort, checkin: checkin, checkout: checkout, erwachsene: gaeste }), "_blank");
+  };
+
+  var inp = { background: "#f9fafb", border: "1px solid " + BORDER, borderRadius: 10, padding: "12px 14px", fontSize: 14, fontFamily: "Inter, sans-serif", color: TEXT, outline: "none", width: "100%" };
+
+  return (
+    <div style={{ background: "#fff", border: "1px solid " + BORDER, borderRadius: 20, padding: 32, boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}>
+      <div style={{ textAlign: "center", marginBottom: 24 }}>
+        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 800, color: TEXT, marginBottom: 8 }}>Wohin soll es gehen?</div>
+        <div style={{ fontSize: 14, color: GRAY }}>Über 2 Millionen Unterkünfte weltweit durchsuchen</div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px,1fr))", gap: 12, maxWidth: 800, margin: "0 auto" }}>
+        <input value={ort} onChange={function(e){setOrt(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")go();}} placeholder="Wohin? z.B. Lissabon" style={inp} />
+        <input type="date" value={checkin} onChange={function(e){setCheckin(e.target.value);}} style={inp} />
+        <input type="date" value={checkout} onChange={function(e){setCheckout(e.target.value);}} style={inp} />
+        <select value={gaeste} onChange={function(e){setGaeste(e.target.value);}} style={inp}>
+          <option value="1">1 Gast</option>
+          <option value="2">2 Gäste</option>
+          <option value="3">3 Gäste</option>
+          <option value="4">4 Gäste</option>
+          <option value="6">6 Gäste</option>
+        </select>
+      </div>
+      <div style={{ textAlign: "center", marginTop: 16 }}>
+        <button onClick={go} disabled={!ort.trim()} className="btn-gold" style={{ padding: "13px 40px", fontSize: 15 }}>Unterkünfte suchen</button>
       </div>
     </div>
   );
@@ -255,8 +330,11 @@ export default function App() {
               })}
             </div>
           </div>
+          <div style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 24px 0" }} className="page-padding">
+            <WorldSearch />
+          </div>
           <div style={{ maxWidth: 1200, margin: "0 auto", padding: "48px 24px" }} className="page-padding">
-            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 30, fontWeight: 700, color: TEXT, marginBottom: 24, textAlign: "center" }}>Alle Hotels entdecken</h2>
+            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 30, fontWeight: 700, color: TEXT, marginBottom: 24, textAlign: "center" }}>Unsere kuratierte Auswahl</h2>
             <div style={{ maxWidth: 500, margin: "0 auto 28px", position: "relative" }} className="search-bar">
               <input
                 value={search}

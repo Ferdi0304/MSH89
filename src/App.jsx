@@ -63,6 +63,15 @@ function track(bookingUrl) {
   return CJ_BASE + "?url=" + encodeURIComponent(bookingUrl);
 }
 
+function cleanQuery(name, ort) {
+  var n = (name || "").split(/ - |, | \(/)[0].trim();
+  n = n.replace(/\s+(Hotel and Spa|Hotel & Spa|Resort & Spa|Game Reserve|National Park)$/i, "").trim();
+  var stadt = (ort || "").split(",")[0].trim();
+  var q = n;
+  if (stadt && n.toLowerCase().indexOf(stadt.toLowerCase()) === -1) q += " " + stadt;
+  return q.split(" ").slice(0, 6).join(" ");
+}
+
 function searchUrl(params) {
   var u = "https://www.booking.com/searchresults.de.html?ss=" + encodeURIComponent(params.ort || "");
   if (params.checkin) u += "&checkin=" + params.checkin;
@@ -146,7 +155,7 @@ function AIChat() {
         body: JSON.stringify({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 600,
-          system: "Du bist ein erfahrener Hotel-Concierge auf MySpecialHotel.com. Antworte immer auf Deutsch, warm und konkret. Nutze KEIN Markdown (keine Sternchen).\n\nUnsere kuratierten Hotels:\n" + hotelContext + "\n\nSO ANTWORTEST DU:\n\nPasst ein kuratiertes Hotel? Nenne es und schreibe am Ende: [HOTELS:1,3]\n\nPasst keines? Nutze dein Wissen ueber echte Hotels weltweit. Empfehle 2-3 konkrete, real existierende Haeuser. Schreibe am Ende fuer JEDES empfohlene Hotel eine Zeile:\n[HOTEL:Hotelname|Stadt, Land]\n\nBeispiel:\n[HOTEL:The Twelve Apostles Hotel and Spa|Kapstadt, Suedafrika]\n[HOTEL:Birkenhead House|Hermanus, Suedafrika]\n\nOptional zusaetzlich eine allgemeine Suche:\n[SUCHE:ort=Kapstadt;maxPreis=300;erwachsene=2]\n\nHalte den Text kurz - maximal 5 Saetze. Die Buttons erscheinen automatisch.",
+          system: "Du bist ein erfahrener Hotel-Concierge auf MySpecialHotel.com. Antworte immer auf Deutsch, warm und konkret. Nutze KEIN Markdown (keine Sternchen).\n\nUnsere kuratierten Hotels:\n" + hotelContext + "\n\nSO ANTWORTEST DU:\n\nPasst ein kuratiertes Hotel? Nenne es und schreibe am Ende: [HOTELS:1,3]\n\nPasst keines? Empfehle 2-3 echte Hotels, die sicher auf Booking.com gelistet sind - also klassische Stadt- und Resorthotels, KEINE exklusiven Safari-Lodges oder Privatvillen. Nutze kurze, praezise Hotelnamen ohne Zusaetze wie Regionsangaben. Schreibe am Ende fuer JEDES empfohlene Hotel eine Zeile:\n[HOTEL:Hotelname|Stadt, Land]\n\nBeispiel:\n[HOTEL:The Twelve Apostles|Kapstadt]\n[HOTEL:Belmond Mount Nelson|Kapstadt]\n\nOptional zusaetzlich eine allgemeine Suche:\n[SUCHE:ort=Kapstadt;maxPreis=300;erwachsene=2]\n\nHalte den Text kurz - maximal 5 Saetze. Die Buttons erscheinen automatisch.",
           messages: [{ role: "user", content: q }]
         })
       });
@@ -170,7 +179,7 @@ function AIChat() {
           var parts = body.split("|");
           var name = (parts[0] || "").trim();
           var ort = (parts[1] || "").trim();
-          return { name: name, ort: ort, url: searchUrl({ ort: name + " " + ort }) };
+          return { name: name, ort: ort, url: searchUrl({ ort: cleanQuery(name, ort) }) };
         }));
       }
 

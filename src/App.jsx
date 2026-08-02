@@ -116,6 +116,37 @@ const css = `
   }
 `;
 
+// === HOTEL-VERZEICHNIS ===
+// Jede per Websuche gefundene URL wird hier gespeichert.
+// Beim naechsten Mal wird sie direkt genutzt - ohne kostenpflichtige Suche.
+// Bekannte Haeuser koennen auch fest eingetragen werden (Key: Name kleingeschrieben).
+var KNOWN_HOTELS = {};
+
+function hotelKey(name) {
+  return (name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function loadCache() {
+  try {
+    var raw = localStorage.getItem("msh_hotels");
+    if (raw) {
+      var saved = JSON.parse(raw);
+      Object.keys(saved).forEach(function(k) {
+        if (!KNOWN_HOTELS[k]) KNOWN_HOTELS[k] = saved[k];
+      });
+    }
+  } catch (e) { /* localStorage nicht verfuegbar - kein Problem */ }
+}
+
+function rememberHotel(name, stadt, url) {
+  var k = hotelKey(name);
+  if (!k || !url) return;
+  KNOWN_HOTELS[k] = { name: name, stadt: stadt, url: url };
+  try {
+    localStorage.setItem("msh_hotels", JSON.stringify(KNOWN_HOTELS));
+  } catch (e) { /* ignorieren */ }
+}
+
 // === CJ AFFILIATE TRACKING ===
 // Website-ID: 101831910 | Link-ID: 15734849
 const CJ_BASE = "https://www.kqzyfj.com/click-101831910-15734849";
@@ -159,7 +190,11 @@ function cleanQuery(name) {
 }
 
 function searchUrl(params) {
-  var u = "https://www.booking.com/searchresults.de.html?ss=" + encodeURIComponent(params.ort || "");
+  var q = params.ort || "";
+  var u = "https://www.booking.com/searchresults.de.html?ss=" + encodeURIComponent(q);
+  // ssne signalisiert Booking eine bewusst gewaehlte Destination -
+  // erhoeht die Trefferquote bei Hotelnamen spuerbar
+  u += "&ssne=" + encodeURIComponent(q) + "&ssne_untouched=" + encodeURIComponent(q);
   if (params.checkin) u += "&checkin=" + params.checkin;
   if (params.checkout) u += "&checkout=" + params.checkout;
   if (params.erwachsene) u += "&group_adults=" + params.erwachsene;
@@ -214,6 +249,8 @@ function AIChat() {
   var [external, setExternal] = useState([]);
   var bottomRef = useRef(null);
 
+  useEffect(function() { loadCache(); }, []);
+
   useEffect(function() {
     if (bottomRef.current) bottomRef.current.scrollIntoView({ behavior: "smooth" });
   }, [msgs, loading, suggested, searchLink, external]);
@@ -249,6 +286,15 @@ function AIChat() {
       ? "\n\nDER GAST HAT BISHER GESAGT (alles davon ist bekannt, nicht erneut fragen):\n- " + gesagt.join("\n- ") + "\n"
       : "";
 
+    // Bereits bekannte Hotels mitgeben - dann muss die KI dafuer nicht suchen
+    var bekannt = Object.keys(KNOWN_HOTELS).slice(0, 60).map(function(k) {
+      var h = KNOWN_HOTELS[k];
+      return h.name + " | " + (h.stadt || "") + " | " + h.url;
+    });
+    var bekanntBlock = bekannt.length > 0
+      ? "\n\nBEREITS BEKANNTE HOTELS (URL schon vorhanden - hier NICHT suchen, URL direkt uebernehmen):\n" + bekannt.join("\n") + "\n"
+      : "";
+
     var hotelContext = HOTELS.map(function(h) {
       return "ID:" + h.id + " | " + h.name + " | " + h.city + ", " + h.country + " | EUR" + h.price + "/Nacht | Tags: " + h.tags.join(", ") + " | LastMinute:" + h.lastMinute + " | Nomad:" + h.nomad + " | Kategorie:" + h.cat;
     }).join("\n");
@@ -261,9 +307,10 @@ function AIChat() {
         },
         body: JSON.stringify({
           model: "claude-haiku-4-5-20251001",
-          max_tokens: 600,
-          system: "Du bist Hotel-Concierge auf MySpecialHotel.com. Antworte auf Deutsch, max 4 Saetze, kein Markdown.\n\nREGEL 1 - GEDAECHTNIS:\nOben steht der bisherige Gespraechsverlauf. Lies ihn. Alles was der Gast dort schon gesagt hat - Reiseziel, Budget, Personenzahl, Anlass, Stil, Datum - ist bekannt. Frage NIEMALS nach etwas, das schon im Verlauf steht.\n\nREGEL 2 - KEINE META-KOMMENTARE:\nSprich nie darueber, ob ein Hotel in unserer Auswahl ist oder nicht. Empfiehl einfach.\n\nREGEL 3 - NUR SICHERE HOTELS:\nJedes [HOTEL:...] wird ein Buchungsbutton. Nenne nur Hotels, deren exakten Namen du kennst und die es auf Booking.com gibt. Unsicher? Weglassen." + profil + "\nUnsere Hotels:\n" + hotelContext + "\n\nAM ENDE ausgeben (ohne Kommentar):\n[HOTELS:1,3] - falls eines unserer Hotels passt\n[HOTEL:Hotelname|Stadt|Land] - pro externem Hotel\n[SUCHE:ort=Stadt;maxPreis=200;erwachsene=2]\n\nBeispiel:\n[HOTEL:Hotel Arts Barcelona|Barcelona|Spanien]\n[SUCHE:ort=Barcelona;maxPreis=250]",
-          messages: history
+          max_tokens: 900,
+          system: "Du bist Hotel-Concierge auf MySpecialHotel.com. Antworte auf Deutsch, max 4 Saetze, kein Markdown.\n\nREGEL 1 - GEDAECHTNIS:\nAlles was der Gast im Verlauf schon gesagt hat - Reiseziel, Budget, Personenzahl, Anlass, Stil, Datum - ist bekannt. Frage NIEMALS erneut danach.\n\nREGEL 2 - KEINE META-KOMMENTARE:\nSprich nie darueber, ob ein Hotel in unserer Auswahl ist oder nicht. Empfiehl einfach.\n\nREGEL 3 - ECHTE BOOKING-LINKS PER WEBSUCHE:\nPasst eines unserer Hotels (unten), nimm es und gib [HOTELS:...] aus - fertig, keine Suche noetig.\nSonst: Nutze das web_search Werkzeug und suche die echte Booking.com-Seite jedes Hotels, das du empfehlen willst.\nSuchbegriff-Muster: site:booking.com \\\"Hotelname\\\" Stadt\nAus dem Ergebnis brauchst du die vollstaendige URL im Format https://www.booking.com/hotel/LAENDERCODE/name.html\nGib NUR Hotels aus, deren echte URL du so gefunden hast. Erfinde NIEMALS eine URL - lieber ein Hotel weniger.\nMaximal 2 Suchen. Steht ein Hotel schon in der Liste bekannter Hotels, uebernimm dessen URL ohne zu suchen." + profil + bekanntBlock + "\nUnsere Hotels:\n" + hotelContext + "\n\nAM ENDE ausgeben (ohne Kommentar):\n[HOTELS:1,3] - falls unsere Hotels passen\n[HOTEL:Hotelname|Stadt|https://www.booking.com/hotel/es/beispiel.html] - pro gefundenem Hotel, mit echter URL\n[SUCHE:ort=Stadt;maxPreis=200;erwachsene=2]",
+          messages: history,
+          tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 2 }]
         })
       });
 
@@ -284,25 +331,26 @@ function AIChat() {
       if (hotelMatches) {
         var list = hotelMatches.map(function(m) {
           var parts = m.slice(7, -1).split("|");
-          var name = (parts[0] || "").trim();
-          var stadt = (parts[1] || "").trim();
-          var land = (parts[2] || "").trim();
-          return { name: name, stadt: stadt, land: land };
+          return {
+            name: (parts[0] || "").trim(),
+            stadt: (parts[1] || "").trim(),
+            link: (parts[2] || "").trim()
+          };
         }).filter(function(h) {
-          // Ohne Name oder Stadt kein Button - lieber gar kein Link
-          // als einer, der bei Booking ins Leere fuehrt
-          return h.name.length > 2 && h.stadt.length > 1;
+          // Nur echte Booking-Hotelseiten durchlassen.
+          // Erfundene oder unvollstaendige URLs werden verworfen -
+          // lieber kein Button als einer, der falsch landet.
+          return h.name.length > 2
+            && h.stadt.length > 1
+            && /^https?:\/\/(www\.)?booking\.com\/hotel\/[a-z]{2}\//i.test(h.link);
         });
 
         if (list.length > 0) fallbackOrt = list[0].stadt;
 
+        list.forEach(function(h) { rememberHotel(h.name, h.stadt, h.link); });
+
         setExternal(list.map(function(h) {
-          var ortLabel = h.land ? h.stadt + ", " + h.land : h.stadt;
-          return {
-            name: h.name,
-            ort: ortLabel,
-            url: searchUrl({ ort: cleanQuery(h.name) })
-          };
+          return { name: h.name, ort: h.stadt, url: track(h.link) };
         }));
       }
 
@@ -351,8 +399,11 @@ function AIChat() {
         {loading && (
           <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
             <div style={{ width: 30, height: 30, borderRadius: "50%", background: ACCENT_LIGHT, border: "1px solid #e9d06a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>AI</div>
-            <div style={{ display: "flex", gap: 5, padding: "11px 15px", background: "#f9fafb", border: "1px solid " + BORDER, borderRadius: "18px 18px 18px 4px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 7, padding: "11px 15px", background: "#f9fafb", border: "1px solid " + BORDER, borderRadius: "18px 18px 18px 4px" }}>
+              <div style={{ display: "flex", gap: 5 }}>
               {[0,1,2].map(function(i) { return <div key={i} style={{ width: 7, height: 7, borderRadius: "50%", background: ACCENT, animation: "bounce 1.2s " + (i * 0.2) + "s infinite" }} />; })}
+              </div>
+              <div style={{ fontSize: 11, color: GRAY }}>Suche passende Hotels...</div>
             </div>
           </div>
         )}
@@ -364,7 +415,7 @@ function AIChat() {
         )}
         {external.length > 0 && !loading && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 6 }}>
-            <div style={{ fontSize: 11, color: ACCENT, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>Direkt buchen</div>
+            <div style={{ fontSize: 11, color: ACCENT, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>Weitere Empfehlungen</div>
             {external.map(function(h, i) {
               return (
                 <a key={i} href={h.url} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, background: "#fff", border: "1.5px solid " + BORDER, borderRadius: 14, padding: "14px 16px", textDecoration: "none", transition: "all 0.2s" }} onMouseEnter={function(e){e.currentTarget.style.borderColor=ACCENT;}} onMouseLeave={function(e){e.currentTarget.style.borderColor=BORDER;}}>
@@ -372,7 +423,7 @@ function AIChat() {
                     <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 15, fontWeight: 700, color: TEXT, marginBottom: 2 }}>{h.name}</div>
                     <div style={{ fontSize: 12, color: GRAY }}>{h.ort}</div>
                   </div>
-                  <span className="btn-gold" style={{ padding: "9px 17px", fontSize: 12, whiteSpace: "nowrap", flexShrink: 0 }}>Auf Booking →</span>
+                  <span className="btn-gold" style={{ padding: "9px 17px", fontSize: 12, whiteSpace: "nowrap", flexShrink: 0 }}>Suchen →</span>
                 </a>
               );
             })}

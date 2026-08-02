@@ -188,7 +188,8 @@ function stripMarkers(t) {
     .replace(/\[SUCHE:[^\]]+\]/g, "")
     .replace(/\[HOTEL:[^\]]+\]/g, "")
     .replace(/\*\*/g, "")
-    .replace(/^#+\s*/gm, "");
+    .replace(/^#+\s*/gm, "")
+    .replace(/https?:\/\/(?:www\.)?booking\.com\/hotel\/[a-z]{2}\/[^\s<>")\]]+/gi, "");
   APOLOGY.forEach(function(re) { s = s.replace(re, ""); });
   return s
     .replace(/[ \t]{2,}/g, " ")
@@ -208,6 +209,19 @@ function budgetAus(texte) {
   if (/m[oö]glichst billig|sehr billig|ganz billig|super billig|spottbillig/.test(alles)) return 60;
   if (/\bbillig|g[uü]nstig|preiswert|low ?budget|wenig geld|schmales budget/.test(alles)) return 90;
   return null;
+}
+
+// Baut aus einer Booking-URL einen lesbaren Hotelnamen,
+// falls das Modell nur den Link ohne Namen geliefert hat.
+function nameAusUrl(u) {
+  try {
+    var teil = u.split("/hotel/")[1].split("/")[1] || "";
+    teil = teil.split("?")[0].replace(/\.(de|en|[a-z]{2})?\.?html?$/i, "");
+    var w = teil.split("-").filter(Boolean).map(function(s) {
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    });
+    return w.join(" ") || "Unterkunft ansehen";
+  } catch (e) { return "Unterkunft ansehen"; }
 }
 
 function cleanQuery(name) {
@@ -343,7 +357,7 @@ function AIChat() {
         body: JSON.stringify({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 900,
-          system: "Du bist Hotel-Concierge auf MySpecialHotel.com. Antworte auf Deutsch, max 4 Saetze, kein Markdown.\n\nREGEL 1 - IMMER ZUERST LIEFERN:\nJede Antwort enthaelt konkrete Hotels. Frage NIE, ohne gleichzeitig etwas vorzuschlagen.\nIst das Reiseziel offen, waehle selbst ein naheliegendes und begruende es kurz. Beispiel: Partyurlaub mit Freunden -> Mallorca, Lloret de Mar oder Split. Wellness -> Tirol oder Suedtirol. Staedtetrip -> je nach Budget.\nFehlende Angaben wie Budget, Datum oder Personenzahl erfragst du nicht, sondern nimmst uebliche Annahmen (2 Personen, mittleres Budget).\nDanach darfst du EINE Rueckfrage stellen, um zu verfeinern - z.B. ob ein anderes Ziel gewuenscht ist. Niemals mehrere Fragen.\nWas im Verlauf schon steht, ist bekannt und wird nie erneut gefragt.\n\nREGEL 2 - NUR RELEVANZ ZAEHLT:\nUnsere eigenen Hotels (Liste unten) haben KEINEN Vorzug. Behandle sie wie jede andere Option und pruefe sie genauso streng.\nEmpfiehl ausschliesslich Hotels, die zum Wunsch passen - in Region, Art und Preis. Strandurlaub heisst Haeuser am Meer, guenstig heisst guenstig.\nPasst keines unserer Hotels, erwaehne sie nicht und suche externe. Ein unpassendes Hotel schadet mehr, als es nuetzt.\n\nREGEL 3 - KEINE META-KOMMENTARE:\nSprich nie darueber, woher eine Empfehlung stammt oder was in unserer Auswahl ist.\n\nREGEL 4 - ECHTE BOOKING-LINKS:\nFuer externe Hotels: Nutze web_search und finde die echte Booking.com-Seite.\nMuster: site:booking.com \\\"Hotelname\\\" Stadt\nDu brauchst die URL im Format https://www.booking.com/hotel/LAENDERCODE/name.html\nErfinde NIEMALS eine URL. Kein Fund = kein Hotel ausgeben.\nMaximal 2 Suchen. Bereits bekannte Hotels (Liste unten) nicht erneut suchen." + profil + budgetHinweis + bekanntBlock + "\nUnsere Hotels:\n" + hotelContext + "\n\nAM ENDE ausgeben (ohne Kommentar):\n[HOTELS:1,3] - wenn unsere Hotels passen\n[HOTEL:Hotelname|Stadt|https://www.booking.com/hotel/es/beispiel.html]\n[SUCHE:ort=Stadt;maxPreis=200;erwachsene=2]",
+          system: "Du bist Hotel-Concierge auf MySpecialHotel.com. Antworte auf Deutsch, max 4 Saetze, kein Markdown.\n\nREGEL 1 - IMMER ZUERST LIEFERN:\nJede Antwort enthaelt konkrete Hotels. Frage NIE, ohne gleichzeitig etwas vorzuschlagen.\nIst das Reiseziel offen, waehle selbst ein naheliegendes und begruende es kurz. Beispiel: Partyurlaub mit Freunden -> Mallorca, Lloret de Mar oder Split. Wellness -> Tirol oder Suedtirol. Staedtetrip -> je nach Budget.\nFehlende Angaben wie Budget, Datum oder Personenzahl erfragst du nicht, sondern nimmst uebliche Annahmen (2 Personen, mittleres Budget).\nDanach darfst du EINE Rueckfrage stellen, um zu verfeinern - z.B. ob ein anderes Ziel gewuenscht ist. Niemals mehrere Fragen.\nWas im Verlauf schon steht, ist bekannt und wird nie erneut gefragt.\n\nREGEL 2 - NUR RELEVANZ ZAEHLT:\nUnsere eigenen Hotels (Liste unten) haben KEINEN Vorzug. Behandle sie wie jede andere Option und pruefe sie genauso streng.\nEmpfiehl ausschliesslich Hotels, die zum Wunsch passen - in Region, Art und Preis. Strandurlaub heisst Haeuser am Meer, guenstig heisst guenstig.\nPasst keines unserer Hotels, erwaehne sie nicht und suche externe. Ein unpassendes Hotel schadet mehr, als es nuetzt.\n\nREGEL 3 - KEINE META-KOMMENTARE:\nSprich nie darueber, woher eine Empfehlung stammt oder was in unserer Auswahl ist.\n\nREGEL 4 - LINKS NIEMALS IN DEN TEXT:\nSchreibe URLs AUSSCHLIESSLICH in die [HOTEL:...]-Zeilen am Ende. Im normalen Antworttext darf KEINE URL stehen - dort erscheint sie nur als toter Text ohne Buchungsfunktion.\n\nREGEL 5 - ECHTE BOOKING-LINKS:\nFuer externe Hotels: Nutze web_search und finde die echte Booking.com-Seite.\nMuster: site:booking.com \\\"Hotelname\\\" Stadt\nDu brauchst die URL im Format https://www.booking.com/hotel/LAENDERCODE/name.html\nErfinde NIEMALS eine URL. Kein Fund = kein Hotel ausgeben.\nMaximal 2 Suchen. Bereits bekannte Hotels (Liste unten) nicht erneut suchen." + profil + budgetHinweis + bekanntBlock + "\nUnsere Hotels:\n" + hotelContext + "\n\nAM ENDE ausgeben (ohne Kommentar):\n[HOTELS:1,3] - wenn unsere Hotels passen\n[HOTEL:Hotelname|Stadt|https://www.booking.com/hotel/es/beispiel.html]\n[SUCHE:ort=Stadt;maxPreis=200;erwachsene=2]",
           messages: history,
           tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 2 }]
         })
@@ -367,7 +381,22 @@ function AIChat() {
         }));
       }
 
+      // Rettungsnetz: Schreibt das Modell URLs direkt in den Text
+      // statt ins [HOTEL:...]-Format, gaebe es keinen Button und kein
+      // Tracking. Also hier einsammeln und nachtraeglich umwandeln.
+      var rohLinks = [];
+      var rohRe = /https?:\/\/(?:www\.)?booking\.com\/hotel\/[a-z]{2}\/[^\s<>")\]]+/gi;
+      var rohTreffer = fullText.match(rohRe) || [];
+
       var hotelMatches = fullText.match(/\[HOTEL:[^\]]+\]/g);
+      var inMarkern = (hotelMatches || []).join(" ");
+      rohTreffer.forEach(function(u) {
+        var url = u.replace(/[.,;:]+$/, "");
+        if (inMarkern.indexOf(url) !== -1) return;
+        if (rohLinks.indexOf(url) !== -1) return;
+        rohLinks.push(url);
+      });
+
       var fallbackOrt = "";
       if (hotelMatches) {
         var list = hotelMatches.map(function(m) {
@@ -382,7 +411,6 @@ function AIChat() {
           // Erfundene oder unvollstaendige URLs werden verworfen -
           // lieber kein Button als einer, der falsch landet.
           return h.name.length > 2
-            && h.stadt.length > 1
             && /^https?:\/\/(www\.)?booking\.com\/hotel\/[a-z]{2}\//i.test(h.link);
         });
 
@@ -393,6 +421,18 @@ function AIChat() {
         setExternal(list.map(function(h) {
           return { name: h.name, ort: h.stadt, url: track(h.link) };
         }));
+      }
+
+      if (rohLinks.length > 0) {
+        var ausRoh = rohLinks.map(function(u) {
+          return { name: nameAusUrl(u), ort: "", url: track(u) };
+        });
+        setExternal(function(prev) {
+          var vorhanden = (prev || []).map(function(x) { return x.url; });
+          return (prev || []).concat(ausRoh.filter(function(x) {
+            return vorhanden.indexOf(x.url) === -1;
+          }));
+        });
       }
 
       var sMatch = fullText.match(/\[SUCHE:([^\]]+)\]/);

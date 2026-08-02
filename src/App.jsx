@@ -124,17 +124,38 @@ function track(bookingUrl) {
   return CJ_BASE + "?url=" + encodeURIComponent(bookingUrl);
 }
 
-function cleanQuery(name, ort) {
-  // Hotelname kuerzen: nur der Teil vor Trennern, max 5 Woerter
+// Entfernt Marker, Markdown und entschuldigende Saetze.
+// Der Prompt allein verhindert Formulierungen wie "leider haben wir kein..."
+// nicht zuverlaessig - deshalb hier deterministisch nachraeumen.
+var APOLOGY = [
+  /[^.!?\n]*\b(leider|bedauerlicherweise)\b[^.!?\n]*(auswahl|angebot|portfolio|kurat|sortiment|haben wir|liste)[^.!?\n]*[.!?]/gi,
+  /[^.!?\n]*\b(nicht|kein[e]?[nsmr]?)\b[^.!?\n]*\b(unserer|unserem|unseren|in unser)\b[^.!?\n]*(auswahl|angebot|portfolio|sortiment|liste|hotels)[^.!?\n]*[.!?]/gi,
+  /[^.!?\n]*\b(in|aus)\s+unserer\s+(kuratierten\s+)?auswahl\b[^.!?\n]*\b(nicht|kein)[^.!?\n]*[.!?]/gi,
+  /[^.!?\n]*\bunsere[rn]?\s+(kuratierte[rn]?\s+)?(auswahl|angebot)\b[^.!?\n]*\b(umfasst|enthaelt|enthält|bietet)\s+(leider\s+)?(kein|nicht)[^.!?\n]*[.!?]/gi
+];
+
+function stripMarkers(t) {
+  var s = (t || "")
+    .replace(/\[HOTELS:[\d,]+\]/g, "")
+    .replace(/\[SUCHE:[^\]]+\]/g, "")
+    .replace(/\[HOTEL:[^\]]+\]/g, "")
+    .replace(/\*\*/g, "")
+    .replace(/^#+\s*/gm, "");
+  APOLOGY.forEach(function(re) { s = s.replace(re, ""); });
+  return s
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/^\s*[\n]+/, "")
+    .trim();
+}
+
+function cleanQuery(name) {
+  // Nur der reine Hotelname. Haengt man die Stadt an,
+  // interpretiert Booking das als Stadtsuche und zeigt fremde Hotels.
   var n = (name || "").split(/ - |, | \(| \| /)[0].trim();
-  n = n.split(" ").slice(0, 5).join(" ");
+  n = n.split(" ").slice(0, 6).join(" ");
   n = n.replace(/\s+(and|und|&|the|by|at|in)$/i, "").trim();
-  // Stadt ist der Anker: landet die Hotelsuche ins Leere,
-  // zeigt Booking trotzdem Ergebnisse in der richtigen Stadt
-  var stadt = (ort || "").split(",")[0].trim();
-  if (!stadt) return n;
-  if (n.toLowerCase().indexOf(stadt.toLowerCase()) !== -1) return n;
-  return n + ", " + stadt;
+  return n;
 }
 
 function searchUrl(params) {
@@ -217,6 +238,17 @@ function AIChat() {
     while (history.length > 0 && history[0].role !== "user") history.shift();
     history.push({ role: "user", content: q });
 
+    // Absicherung fuer kleinere Modelle: Was der Gast bisher gesagt hat,
+    // nochmal gebuendelt in den Prompt - nicht nur im Verlauf vergraben.
+    var gesagt = msgs
+      .filter(function(m) { return m.role === "user" && m.text && m.text.trim(); })
+      .map(function(m) { return m.text.trim(); })
+      .slice(-6);
+    gesagt.push(q);
+    var profil = gesagt.length > 1
+      ? "\n\nDER GAST HAT BISHER GESAGT (alles davon ist bekannt, nicht erneut fragen):\n- " + gesagt.join("\n- ") + "\n"
+      : "";
+
     var hotelContext = HOTELS.map(function(h) {
       return "ID:" + h.id + " | " + h.name + " | " + h.city + ", " + h.country + " | EUR" + h.price + "/Nacht | Tags: " + h.tags.join(", ") + " | LastMinute:" + h.lastMinute + " | Nomad:" + h.nomad + " | Kategorie:" + h.cat;
     }).join("\n");
@@ -230,7 +262,7 @@ function AIChat() {
         body: JSON.stringify({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 600,
-          system: "Du bist der Hotel-Concierge von MySpecialHotel.com. Antworte auf Deutsch, warm und konkret. KEIN Markdown, keine Sternchen.\n\nUnsere kuratierten Hotels:\n" + hotelContext + "\n\nGESPRAECHSFUEHRUNG:\nDu fuehrst ein fortlaufendes Gespraech. Alles was der Gast bereits gesagt hat - Reiseziel, Budget, Anlass, Stil, Personenzahl, Reisezeit - merkst du dir und fragst NIE erneut danach. Hoechstens EINE Rueckfrage, und nur wenn etwas Wesentliches fehlt. Sonst empfiehl direkt.\n\nWIE DU EMPFIEHLST:\nNenne einfach die passenden Hotels. Sage NIEMALS 'leider haben wir kein Hotel in unserer Auswahl' oder aehnliches - woher die Empfehlung kommt, interessiert den Gast nicht. Passt eines unserer kuratierten Hotels, nimm es. Sonst empfiehl andere, ohne das zu kommentieren.\n\nWELCHE HOTELS DU NENNEN DARFST - SEHR WICHTIG:\nJedes Hotel, das du mit [HOTEL:...] ausgibst, bekommt einen Buchungsbutton. Nenne deshalb NUR Haeuser, bei denen du dir sicher bist, dass sie real existieren und auf Booking.com buchbar sind - also bekannte, etablierte Hotels, deren genauen Namen du kennst. Art und Preisklasse sind egal.\nBist du dir bei einem Haus nicht sicher, gib es NICHT als [HOTEL:...] aus. Beschreibe es stattdessen nur im Text oder nenne ein anderes, das du sicher kennst. Ein fehlender Button ist besser als einer, der ins Leere fuehrt.\nLieber 2 sichere Hotels als 4 unsichere.\n\nFORMAT (am Ende, ohne Kommentar):\nKuratiertes Hotel passt: [HOTELS:1,3]\nAnderes Hotel: [HOTEL:Hotelname|Stadt|Land]\nStadt und Land sind PFLICHT. Ohne sie wird das Hotel verworfen.\nDer Hotelname muss exakt und kurz sein, so wie er bei Booking steht - ohne Region, ohne Zusaetze.\n\nImmer zusaetzlich eine Stadtsuche:\n[SUCHE:ort=Stadt;maxPreis=200;erwachsene=2]\nmaxPreis und erwachsene nur, wenn der Gast sie genannt hat.\n\nBeispiel:\n[HOTEL:Hotel Arts Barcelona|Barcelona|Spanien]\n[HOTEL:W Barcelona|Barcelona|Spanien]\n[SUCHE:ort=Barcelona;maxPreis=250]\n\nMaximal 4 Saetze Text. Erwaehne die Buttons nicht.",
+          system: "Du bist Hotel-Concierge auf MySpecialHotel.com. Antworte auf Deutsch, max 4 Saetze, kein Markdown.\n\nREGEL 1 - GEDAECHTNIS:\nOben steht der bisherige Gespraechsverlauf. Lies ihn. Alles was der Gast dort schon gesagt hat - Reiseziel, Budget, Personenzahl, Anlass, Stil, Datum - ist bekannt. Frage NIEMALS nach etwas, das schon im Verlauf steht.\n\nREGEL 2 - KEINE META-KOMMENTARE:\nSprich nie darueber, ob ein Hotel in unserer Auswahl ist oder nicht. Empfiehl einfach.\n\nREGEL 3 - NUR SICHERE HOTELS:\nJedes [HOTEL:...] wird ein Buchungsbutton. Nenne nur Hotels, deren exakten Namen du kennst und die es auf Booking.com gibt. Unsicher? Weglassen." + profil + "\nUnsere Hotels:\n" + hotelContext + "\n\nAM ENDE ausgeben (ohne Kommentar):\n[HOTELS:1,3] - falls eines unserer Hotels passt\n[HOTEL:Hotelname|Stadt|Land] - pro externem Hotel\n[SUCHE:ort=Stadt;maxPreis=200;erwachsene=2]\n\nBeispiel:\n[HOTEL:Hotel Arts Barcelona|Barcelona|Spanien]\n[SUCHE:ort=Barcelona;maxPreis=250]",
           messages: history
         })
       });
@@ -269,7 +301,7 @@ function AIChat() {
           return {
             name: h.name,
             ort: ortLabel,
-            url: searchUrl({ ort: cleanQuery(h.name, h.stadt) })
+            url: searchUrl({ ort: cleanQuery(h.name) })
           };
         }));
       }
@@ -291,13 +323,7 @@ function AIChat() {
         setSearchLink({ url: searchUrl({ ort: fallbackOrt }), ort: fallbackOrt });
       }
 
-      var cleanText = fullText
-        .replace(/\[HOTELS:[\d,]+\]/g, "")
-        .replace(/\[SUCHE:[^\]]+\]/g, "")
-        .replace(/\[HOTEL:[^\]]+\]/g, "")
-        .replace(/\*\*/g, "")
-        .replace(/\n{3,}/g, "\n\n")
-        .trim();
+      var cleanText = stripMarkers(fullText);
       setMsgs(function(p) { return [...p, { role: "assistant", text: cleanText }]; });
 
     } catch(err) {

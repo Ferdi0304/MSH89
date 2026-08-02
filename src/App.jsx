@@ -125,12 +125,16 @@ function track(bookingUrl) {
 }
 
 function cleanQuery(name, ort) {
-  var n = (name || "").split(/ - |, | \(/)[0].trim();
-  n = n.replace(/\s+(Hotel and Spa|Hotel & Spa|Resort & Spa|Game Reserve|National Park)$/i, "").trim();
+  // Hotelname kuerzen: nur der Teil vor Trennern, max 5 Woerter
+  var n = (name || "").split(/ - |, | \(| \| /)[0].trim();
+  n = n.split(" ").slice(0, 5).join(" ");
+  n = n.replace(/\s+(and|und|&|the|by|at|in)$/i, "").trim();
+  // Stadt ist der Anker: landet die Hotelsuche ins Leere,
+  // zeigt Booking trotzdem Ergebnisse in der richtigen Stadt
   var stadt = (ort || "").split(",")[0].trim();
-  var q = n;
-  if (stadt && n.toLowerCase().indexOf(stadt.toLowerCase()) === -1) q += " " + stadt;
-  return q.split(" ").slice(0, 6).join(" ");
+  if (!stadt) return n;
+  if (n.toLowerCase().indexOf(stadt.toLowerCase()) !== -1) return n;
+  return n + ", " + stadt;
 }
 
 function searchUrl(params) {
@@ -203,6 +207,16 @@ function AIChat() {
     setSearchLink(null);
     setExternal([]);
 
+    var history = msgs
+      .filter(function(m, i) { return !(i === 0 && m.role === "assistant"); })
+      .filter(function(m) { return m.text && m.text.trim().length > 0; })
+      .map(function(m) {
+        return { role: m.role === "user" ? "user" : "assistant", content: m.text.trim() };
+      })
+      .slice(-12);
+    while (history.length > 0 && history[0].role !== "user") history.shift();
+    history.push({ role: "user", content: q });
+
     var hotelContext = HOTELS.map(function(h) {
       return "ID:" + h.id + " | " + h.name + " | " + h.city + ", " + h.country + " | EUR" + h.price + "/Nacht | Tags: " + h.tags.join(", ") + " | LastMinute:" + h.lastMinute + " | Nomad:" + h.nomad + " | Kategorie:" + h.cat;
     }).join("\n");
@@ -216,8 +230,8 @@ function AIChat() {
         body: JSON.stringify({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 600,
-          system: "Du bist ein erfahrener Hotel-Concierge auf MySpecialHotel.com. Antworte immer auf Deutsch, warm und konkret. Nutze KEIN Markdown (keine Sternchen).\n\nUnsere kuratierten Hotels:\n" + hotelContext + "\n\nSO ANTWORTEST DU:\n\nPasst ein kuratiertes Hotel? Nenne es und schreibe am Ende: [HOTELS:1,3]\n\nPasst keines? Empfehle 2-3 echte Hotels, die sicher auf Booking.com gelistet sind - also klassische Stadt- und Resorthotels, KEINE exklusiven Safari-Lodges oder Privatvillen. Nutze kurze, praezise Hotelnamen ohne Zusaetze wie Regionsangaben. Schreibe am Ende fuer JEDES empfohlene Hotel eine Zeile:\n[HOTEL:Hotelname|Stadt, Land]\n\nBeispiel:\n[HOTEL:The Twelve Apostles|Kapstadt]\n[HOTEL:Belmond Mount Nelson|Kapstadt]\n\nOptional zusaetzlich eine allgemeine Suche:\n[SUCHE:ort=Kapstadt;maxPreis=300;erwachsene=2]\n\nHalte den Text kurz - maximal 5 Saetze. Die Buttons erscheinen automatisch.",
-          messages: [{ role: "user", content: q }]
+          system: "Du bist der Hotel-Concierge von MySpecialHotel.com. Antworte auf Deutsch, warm und konkret. KEIN Markdown, keine Sternchen.\n\nUnsere kuratierten Hotels:\n" + hotelContext + "\n\nGESPRAECHSFUEHRUNG:\nDu fuehrst ein fortlaufendes Gespraech. Alles was der Gast bereits gesagt hat - Reiseziel, Budget, Anlass, Stil, Personenzahl, Reisezeit - merkst du dir und fragst NIE erneut danach. Hoechstens EINE Rueckfrage, und nur wenn etwas Wesentliches fehlt. Sonst empfiehl direkt.\n\nWIE DU EMPFIEHLST:\nNenne einfach die passenden Hotels. Sage NIEMALS 'leider haben wir kein Hotel in unserer Auswahl' oder aehnliches - woher die Empfehlung kommt, interessiert den Gast nicht. Passt eines unserer kuratierten Hotels, nimm es. Sonst empfiehl andere, ohne das zu kommentieren.\n\nWELCHE HOTELS DU NENNEN DARFST - SEHR WICHTIG:\nJedes Hotel, das du mit [HOTEL:...] ausgibst, bekommt einen Buchungsbutton. Nenne deshalb NUR Haeuser, bei denen du dir sicher bist, dass sie real existieren und auf Booking.com buchbar sind - also bekannte, etablierte Hotels, deren genauen Namen du kennst. Art und Preisklasse sind egal.\nBist du dir bei einem Haus nicht sicher, gib es NICHT als [HOTEL:...] aus. Beschreibe es stattdessen nur im Text oder nenne ein anderes, das du sicher kennst. Ein fehlender Button ist besser als einer, der ins Leere fuehrt.\nLieber 2 sichere Hotels als 4 unsichere.\n\nFORMAT (am Ende, ohne Kommentar):\nKuratiertes Hotel passt: [HOTELS:1,3]\nAnderes Hotel: [HOTEL:Hotelname|Stadt|Land]\nStadt und Land sind PFLICHT. Ohne sie wird das Hotel verworfen.\nDer Hotelname muss exakt und kurz sein, so wie er bei Booking steht - ohne Region, ohne Zusaetze.\n\nImmer zusaetzlich eine Stadtsuche:\n[SUCHE:ort=Stadt;maxPreis=200;erwachsene=2]\nmaxPreis und erwachsene nur, wenn der Gast sie genannt hat.\n\nBeispiel:\n[HOTEL:Hotel Arts Barcelona|Barcelona|Spanien]\n[HOTEL:W Barcelona|Barcelona|Spanien]\n[SUCHE:ort=Barcelona;maxPreis=250]\n\nMaximal 4 Saetze Text. Erwaehne die Buttons nicht.",
+          messages: history
         })
       });
 
@@ -234,24 +248,47 @@ function AIChat() {
       }
 
       var hotelMatches = fullText.match(/\[HOTEL:[^\]]+\]/g);
+      var fallbackOrt = "";
       if (hotelMatches) {
-        setExternal(hotelMatches.map(function(m) {
-          var body = m.slice(7, -1);
-          var parts = body.split("|");
+        var list = hotelMatches.map(function(m) {
+          var parts = m.slice(7, -1).split("|");
           var name = (parts[0] || "").trim();
-          var ort = (parts[1] || "").trim();
-          return { name: name, ort: ort, url: searchUrl({ ort: cleanQuery(name, ort) }) };
+          var stadt = (parts[1] || "").trim();
+          var land = (parts[2] || "").trim();
+          return { name: name, stadt: stadt, land: land };
+        }).filter(function(h) {
+          // Ohne Name oder Stadt kein Button - lieber gar kein Link
+          // als einer, der bei Booking ins Leere fuehrt
+          return h.name.length > 2 && h.stadt.length > 1;
+        });
+
+        if (list.length > 0) fallbackOrt = list[0].stadt;
+
+        setExternal(list.map(function(h) {
+          var ortLabel = h.land ? h.stadt + ", " + h.land : h.stadt;
+          return {
+            name: h.name,
+            ort: ortLabel,
+            url: searchUrl({ ort: cleanQuery(h.name, h.stadt) })
+          };
         }));
       }
 
       var sMatch = fullText.match(/\[SUCHE:([^\]]+)\]/);
+      var sParams = null;
       if (sMatch) {
-        var params = {};
+        sParams = {};
         sMatch[1].split(";").forEach(function(pair) {
           var kv = pair.split("=");
-          if (kv.length === 2) params[kv[0].trim()] = kv[1].trim();
+          if (kv.length === 2) sParams[kv[0].trim()] = kv[1].trim();
         });
-        if (params.ort) setSearchLink({ url: searchUrl(params), ort: params.ort });
+      }
+      // Garantierter Rueckfallpfad: findet Booking ein Hotel nicht,
+      // gibt es immer noch die funktionierende Stadtsuche
+      if (sParams && sParams.ort) {
+        setSearchLink({ url: searchUrl(sParams), ort: sParams.ort });
+      } else if (fallbackOrt) {
+        setSearchLink({ url: searchUrl({ ort: fallbackOrt }), ort: fallbackOrt });
       }
 
       var cleanText = fullText
@@ -309,7 +346,7 @@ function AIChat() {
                     <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 15, fontWeight: 700, color: TEXT, marginBottom: 2 }}>{h.name}</div>
                     <div style={{ fontSize: 12, color: GRAY }}>{h.ort}</div>
                   </div>
-                  <span className="btn-gold" style={{ padding: "8px 16px", fontSize: 12, whiteSpace: "nowrap", flexShrink: 0 }}>Preise →</span>
+                  <span className="btn-gold" style={{ padding: "9px 17px", fontSize: 12, whiteSpace: "nowrap", flexShrink: 0 }}>Auf Booking →</span>
                 </a>
               );
             })}
@@ -317,9 +354,9 @@ function AIChat() {
         )}
         {searchLink && !loading && (
           <a href={searchLink.url} target="_blank" rel="noopener noreferrer" style={{ display: "block", marginTop: 6, background: ACCENT_LIGHT, border: "1px solid #e9d06a", borderRadius: 14, padding: 16, textDecoration: "none" }}>
-            <div style={{ fontSize: 11, color: ACCENT, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>Alle Unterkuenfte ansehen</div>
-            <div style={{ fontSize: 15, color: TEXT, fontWeight: 600, marginBottom: 4 }}>Verfuegbarkeit in {searchLink.ort} pruefen</div>
-            <div style={{ fontSize: 12, color: GRAY }}>Live-Preise aus ueber 2 Millionen Unterkuenften →</div>
+            <div style={{ fontSize: 11, color: ACCENT, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>Mehr Auswahl</div>
+            <div style={{ fontSize: 15, color: TEXT, fontWeight: 600, marginBottom: 4 }}>Alle Unterkuenfte in {searchLink.ort}</div>
+            <div style={{ fontSize: 12, color: GRAY }}>Live-Preise und Verfuegbarkeit ansehen →</div>
           </a>
         )}
         <div ref={bottomRef} />

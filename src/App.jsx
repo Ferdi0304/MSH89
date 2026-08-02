@@ -165,6 +165,23 @@ var APOLOGY = [
   /[^.!?\n]*\bunsere[rn]?\s+(kuratierte[rn]?\s+)?(auswahl|angebot)\b[^.!?\n]*\b(umfasst|enthaelt|enthält|bietet)\s+(leider\s+)?(kein|nicht)[^.!?\n]*[.!?]/gi
 ];
 
+// Begrenzt Rueckfragen auf eine pro Antwort.
+// Mehrere Fragen auf einmal erzeugen Tipparbeit und Absprung -
+// eine Rueckfrage nach einer Empfehlung ist dagegen wertvoll,
+// weil sie zur naechsten Runde und damit zur Buchung fuehrt.
+function limitFragen(text) {
+  var saetze = text.split(/(?<=[.!?])\s+/);
+  var gesehen = false;
+  var out = saetze.filter(function(s) {
+    if (s.indexOf("?") === -1) return true;
+    if (gesehen) return false;
+    gesehen = true;
+    return true;
+  });
+  var r = out.join(" ").trim();
+  return r.length > 0 ? r : text;
+}
+
 function stripMarkers(t) {
   var s = (t || "")
     .replace(/\[HOTELS:[\d,]+\]/g, "")
@@ -178,6 +195,19 @@ function stripMarkers(t) {
     .replace(/\n{3,}/g, "\n\n")
     .replace(/^\s*[\n]+/, "")
     .trim();
+}
+
+// Liest ein Preislimit aus dem Gespraech.
+// Explizite Zahlen haben Vorrang, sonst greifen Signalwoerter.
+function budgetAus(texte) {
+  var alles = texte.join(" ").toLowerCase();
+  var m = alles.match(/(?:bis|unter|max(?:imal)?|hoechstens|höchstens)\s*(\d{2,4})/);
+  if (m) return parseInt(m[1], 10);
+  m = alles.match(/(\d{2,4})\s*(?:eur|euro|€)/);
+  if (m) return parseInt(m[1], 10);
+  if (/m[oö]glichst billig|sehr billig|ganz billig|super billig|spottbillig/.test(alles)) return 60;
+  if (/\bbillig|g[uü]nstig|preiswert|low ?budget|wenig geld|schmales budget/.test(alles)) return 90;
+  return null;
 }
 
 function cleanQuery(name) {
@@ -287,6 +317,11 @@ function AIChat() {
       : "";
 
     // Bereits bekannte Hotels mitgeben - dann muss die KI dafuer nicht suchen
+    var limit = budgetAus(gesagt);
+    var budgetHinweis = limit
+      ? "\n\nPREISLIMIT DES GASTES: maximal ca. " + limit + " EUR pro Nacht. Empfiehl NICHTS Teureres - lieber ein einfacheres Haus als ein zu teures.\n"
+      : "";
+
     var bekannt = Object.keys(KNOWN_HOTELS).slice(0, 60).map(function(k) {
       var h = KNOWN_HOTELS[k];
       return h.name + " | " + (h.stadt || "") + " | " + h.url;
@@ -308,7 +343,7 @@ function AIChat() {
         body: JSON.stringify({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 900,
-          system: "Du bist Hotel-Concierge auf MySpecialHotel.com. Antworte auf Deutsch, max 4 Saetze, kein Markdown.\n\nREGEL 1 - GEDAECHTNIS:\nAlles was der Gast im Verlauf schon gesagt hat - Reiseziel, Budget, Personenzahl, Anlass, Stil, Datum - ist bekannt. Frage NIEMALS erneut danach.\n\nREGEL 2 - KEINE META-KOMMENTARE:\nSprich nie darueber, ob ein Hotel in unserer Auswahl ist oder nicht. Empfiehl einfach.\n\nREGEL 3 - ECHTE BOOKING-LINKS PER WEBSUCHE:\nPasst eines unserer Hotels (unten), nimm es und gib [HOTELS:...] aus - fertig, keine Suche noetig.\nSonst: Nutze das web_search Werkzeug und suche die echte Booking.com-Seite jedes Hotels, das du empfehlen willst.\nSuchbegriff-Muster: site:booking.com \\\"Hotelname\\\" Stadt\nAus dem Ergebnis brauchst du die vollstaendige URL im Format https://www.booking.com/hotel/LAENDERCODE/name.html\nGib NUR Hotels aus, deren echte URL du so gefunden hast. Erfinde NIEMALS eine URL - lieber ein Hotel weniger.\nMaximal 2 Suchen. Steht ein Hotel schon in der Liste bekannter Hotels, uebernimm dessen URL ohne zu suchen." + profil + bekanntBlock + "\nUnsere Hotels:\n" + hotelContext + "\n\nAM ENDE ausgeben (ohne Kommentar):\n[HOTELS:1,3] - falls unsere Hotels passen\n[HOTEL:Hotelname|Stadt|https://www.booking.com/hotel/es/beispiel.html] - pro gefundenem Hotel, mit echter URL\n[SUCHE:ort=Stadt;maxPreis=200;erwachsene=2]",
+          system: "Du bist Hotel-Concierge auf MySpecialHotel.com. Antworte auf Deutsch, max 4 Saetze, kein Markdown.\n\nREGEL 1 - IMMER ZUERST LIEFERN:\nJede Antwort enthaelt konkrete Hotels. Frage NIE, ohne gleichzeitig etwas vorzuschlagen.\nIst das Reiseziel offen, waehle selbst ein naheliegendes und begruende es kurz. Beispiel: Partyurlaub mit Freunden -> Mallorca, Lloret de Mar oder Split. Wellness -> Tirol oder Suedtirol. Staedtetrip -> je nach Budget.\nFehlende Angaben wie Budget, Datum oder Personenzahl erfragst du nicht, sondern nimmst uebliche Annahmen (2 Personen, mittleres Budget).\nDanach darfst du EINE Rueckfrage stellen, um zu verfeinern - z.B. ob ein anderes Ziel gewuenscht ist. Niemals mehrere Fragen.\nWas im Verlauf schon steht, ist bekannt und wird nie erneut gefragt.\n\nREGEL 2 - NUR RELEVANZ ZAEHLT:\nUnsere eigenen Hotels (Liste unten) haben KEINEN Vorzug. Behandle sie wie jede andere Option und pruefe sie genauso streng.\nEmpfiehl ausschliesslich Hotels, die zum Wunsch passen - in Region, Art und Preis. Strandurlaub heisst Haeuser am Meer, guenstig heisst guenstig.\nPasst keines unserer Hotels, erwaehne sie nicht und suche externe. Ein unpassendes Hotel schadet mehr, als es nuetzt.\n\nREGEL 3 - KEINE META-KOMMENTARE:\nSprich nie darueber, woher eine Empfehlung stammt oder was in unserer Auswahl ist.\n\nREGEL 4 - ECHTE BOOKING-LINKS:\nFuer externe Hotels: Nutze web_search und finde die echte Booking.com-Seite.\nMuster: site:booking.com \\\"Hotelname\\\" Stadt\nDu brauchst die URL im Format https://www.booking.com/hotel/LAENDERCODE/name.html\nErfinde NIEMALS eine URL. Kein Fund = kein Hotel ausgeben.\nMaximal 2 Suchen. Bereits bekannte Hotels (Liste unten) nicht erneut suchen." + profil + budgetHinweis + bekanntBlock + "\nUnsere Hotels:\n" + hotelContext + "\n\nAM ENDE ausgeben (ohne Kommentar):\n[HOTELS:1,3] - wenn unsere Hotels passen\n[HOTEL:Hotelname|Stadt|https://www.booking.com/hotel/es/beispiel.html]\n[SUCHE:ort=Stadt;maxPreis=200;erwachsene=2]",
           messages: history,
           tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 2 }]
         })
@@ -323,7 +358,13 @@ function AIChat() {
       var match = fullText.match(/\[HOTELS:([\d,]+)\]/);
       if (match) {
         var ids = match[1].split(",").map(Number);
-        setSuggested(HOTELS.filter(function(h) { return ids.indexOf(h.id) !== -1; }));
+        // Preislimit hart durchsetzen. Das Modell haelt sich nicht
+        // zuverlaessig daran, ein zu teurer Vorschlag kostet Vertrauen.
+        setSuggested(HOTELS.filter(function(h) {
+          if (ids.indexOf(h.id) === -1) return false;
+          if (limit && h.price > limit * 1.15) return false;
+          return true;
+        }));
       }
 
       var hotelMatches = fullText.match(/\[HOTEL:[^\]]+\]/g);
@@ -368,10 +409,10 @@ function AIChat() {
       if (sParams && sParams.ort) {
         setSearchLink({ url: searchUrl(sParams), ort: sParams.ort });
       } else if (fallbackOrt) {
-        setSearchLink({ url: searchUrl({ ort: fallbackOrt }), ort: fallbackOrt });
+        setSearchLink({ url: searchUrl({ ort: fallbackOrt, maxPreis: limit || undefined }), ort: fallbackOrt });
       }
 
-      var cleanText = stripMarkers(fullText);
+      var cleanText = limitFragen(stripMarkers(fullText));
       setMsgs(function(p) { return [...p, { role: "assistant", text: cleanText }]; });
 
     } catch(err) {

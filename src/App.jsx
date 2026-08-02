@@ -158,6 +158,15 @@ function track(bookingUrl) {
 // Entfernt Marker, Markdown und entschuldigende Saetze.
 // Der Prompt allein verhindert Formulierungen wie "leider haben wir kein..."
 // nicht zuverlaessig - deshalb hier deterministisch nachraeumen.
+// Vertroestungen entfernen. Saetze wie "Lass mich suchen" sind wertlos,
+// weil die Suche in derselben Antwort bereits passiert sein muss.
+var VERTROESTUNG = [
+  /[^.!?\n]*\b(lass mich|ich (werde|kann|wuerde|würde))\b[^.!?\n]*\b(such|raussuch|finden|heraussuch|zusammenstell|schau)[^.!?\n]*[.!?]/gi,
+  /[^.!?\n]*\b(sag|schreib|gib)\b[^.!?\n]*\bbescheid\b[^.!?\n]*\b(link|schick|such)[^.!?\n]*[.!?]/gi,
+  /[^.!?\n]*\bdann (schicke|sende|suche|finde) ich\b[^.!?\n]*[.!?]/gi,
+  /[^.!?\n]*\bgleich\b[^.!?\n]*\b(die besten|passende)\b[^.!?\n]*(deals|optionen|links)[^.!?\n]*[.!?]/gi
+];
+
 var APOLOGY = [
   /[^.!?\n]*\b(leider|bedauerlicherweise)\b[^.!?\n]*(auswahl|angebot|portfolio|kurat|sortiment|haben wir|liste)[^.!?\n]*[.!?]/gi,
   /[^.!?\n]*\b(nicht|kein[e]?[nsmr]?)\b[^.!?\n]*\b(unserer|unserem|unseren|in unser)\b[^.!?\n]*(auswahl|angebot|portfolio|sortiment|liste|hotels)[^.!?\n]*[.!?]/gi,
@@ -191,6 +200,7 @@ function stripMarkers(t) {
     .replace(/^#+\s*/gm, "")
     .replace(/https?:\/\/(?:www\.)?booking\.com\/hotel\/[a-z]{2}\/[^\s<>")\]]+/gi, "");
   APOLOGY.forEach(function(re) { s = s.replace(re, ""); });
+  VERTROESTUNG.forEach(function(re) { s = s.replace(re, ""); });
   return s
     .replace(/[ \t]{2,}/g, " ")
     .replace(/\n{3,}/g, "\n\n")
@@ -357,7 +367,7 @@ function AIChat() {
         body: JSON.stringify({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 900,
-          system: "Du bist Hotel-Concierge auf MySpecialHotel.com. Antworte auf Deutsch, max 4 Saetze, kein Markdown.\n\nREGEL 1 - IMMER ZUERST LIEFERN:\nJede Antwort enthaelt konkrete Hotels. Frage NIE, ohne gleichzeitig etwas vorzuschlagen.\nIst das Reiseziel offen, waehle selbst ein naheliegendes und begruende es kurz. Beispiel: Partyurlaub mit Freunden -> Mallorca, Lloret de Mar oder Split. Wellness -> Tirol oder Suedtirol. Staedtetrip -> je nach Budget.\nFehlende Angaben wie Budget, Datum oder Personenzahl erfragst du nicht, sondern nimmst uebliche Annahmen (2 Personen, mittleres Budget).\nDanach darfst du EINE Rueckfrage stellen, um zu verfeinern - z.B. ob ein anderes Ziel gewuenscht ist. Niemals mehrere Fragen.\nWas im Verlauf schon steht, ist bekannt und wird nie erneut gefragt.\n\nREGEL 2 - NUR RELEVANZ ZAEHLT:\nUnsere eigenen Hotels (Liste unten) haben KEINEN Vorzug. Behandle sie wie jede andere Option und pruefe sie genauso streng.\nEmpfiehl ausschliesslich Hotels, die zum Wunsch passen - in Region, Art und Preis. Strandurlaub heisst Haeuser am Meer, guenstig heisst guenstig.\nPasst keines unserer Hotels, erwaehne sie nicht und suche externe. Ein unpassendes Hotel schadet mehr, als es nuetzt.\n\nREGEL 3 - KEINE META-KOMMENTARE:\nSprich nie darueber, woher eine Empfehlung stammt oder was in unserer Auswahl ist.\n\nREGEL 4 - LINKS NIEMALS IN DEN TEXT:\nSchreibe URLs AUSSCHLIESSLICH in die [HOTEL:...]-Zeilen am Ende. Im normalen Antworttext darf KEINE URL stehen - dort erscheint sie nur als toter Text ohne Buchungsfunktion.\n\nREGEL 5 - ECHTE BOOKING-LINKS:\nFuer externe Hotels: Nutze web_search und finde die echte Booking.com-Seite.\nMuster: site:booking.com \\\"Hotelname\\\" Stadt\nDu brauchst die URL im Format https://www.booking.com/hotel/LAENDERCODE/name.html\nErfinde NIEMALS eine URL. Kein Fund = kein Hotel ausgeben.\nMaximal 2 Suchen. Bereits bekannte Hotels (Liste unten) nicht erneut suchen." + profil + budgetHinweis + bekanntBlock + "\nUnsere Hotels:\n" + hotelContext + "\n\nAM ENDE ausgeben (ohne Kommentar):\n[HOTELS:1,3] - wenn unsere Hotels passen\n[HOTEL:Hotelname|Stadt|https://www.booking.com/hotel/es/beispiel.html]\n[SUCHE:ort=Stadt;maxPreis=200;erwachsene=2]",
+          system: "Du bist Hotel-Concierge auf MySpecialHotel.com. Deutsch, max 4 Saetze, kein Markdown.\n\nOBERSTE REGEL - JEDE ANTWORT LIEFERT LINKS:\nJede einzelne Antwort MUSS mindestens einen Hotel-Marker enthalten ([HOTELS:...] oder [HOTEL:...]). Eine Antwort ohne Marker ist wertlos.\nEs ist VERBOTEN, einen Hotelnamen im Text zu nennen, ohne ihn zugleich als Marker auszugeben. Nennen ohne Link hilft niemandem.\nVertroeste nie auf spaeter. Schreibe NIE Saetze wie 'Lass mich suchen', 'Ich suche dir gleich' oder 'Sag Bescheid, dann schicke ich Links'. Suche sofort und liefere in derselben Antwort.\n\nAUCH BEI VAGEN ANFRAGEN SOFORT LIEFERN:\nIst das Ziel unklar, waehle selbst das naheliegendste und liefere direkt 2-3 Hotels mit Links. Erst danach eine kurze Rueckfrage.\nBeispiel fuer 'Partyurlaub mit Freunden': Lloret de Mar waehlen, zwei guenstige Haeuser dort suchen, ausgeben, dann fragen ob ein anderes Ziel gewuenscht ist.\nFehlende Angaben wie Budget, Datum oder Personenzahl nimmst du an (2 Personen, mittleres Budget) statt zu fragen.\nHoechstens EINE Rueckfrage pro Antwort, immer NACH den Empfehlungen.\nWas im Verlauf steht, ist bekannt und wird nie erneut gefragt.\n\nRELEVANZ:\nUnsere eigenen Hotels (Liste unten) haben KEINEN Vorzug, pruefe sie genauso streng. Es zaehlt nur, ob Region, Art und Preis passen. Passt keines, erwaehne sie nicht.\n\nLINKS:\nFuer externe Hotels: web_search nutzen, Muster site:booking.com \\\"Hotelname\\\" Stadt\nDu brauchst die URL im Format https://www.booking.com/hotel/LAENDERCODE/name.html\nURLs gehoeren AUSSCHLIESSLICH in die Marker, NIEMALS in den Antworttext.\nErfinde keine URL. Kein Fund = anderes Hotel suchen.\nMaximal 2 Suchen. Bekannte Hotels (Liste unten) nicht erneut suchen.\n\nKEINE META-KOMMENTARE:\nSprich nie darueber, woher eine Empfehlung stammt oder was in unserer Auswahl ist." + profil + budgetHinweis + bekanntBlock + "\nUnsere Hotels:\n" + hotelContext + "\n\nAM ENDE JEDER ANTWORT (ohne Kommentar):\n[HOTELS:1,3] - wenn unsere Hotels passen\n[HOTEL:Hotelname|Stadt|https://www.booking.com/hotel/es/beispiel.html]\n[SUCHE:ort=Stadt;maxPreis=90;erwachsene=6]\n\nDie SUCHE-Zeile ist IMMER Pflicht, auch wenn Hotels gefunden wurden.",
           messages: history,
           tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 2 }]
         })

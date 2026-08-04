@@ -367,7 +367,7 @@ function AIChat() {
         body: JSON.stringify({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 900,
-          system: "Du bist Hotel-Concierge auf MySpecialHotel.com. Deutsch, max 4 Saetze, kein Markdown.\n\nOBERSTE REGEL - JEDE ANTWORT LIEFERT LINKS:\nJede einzelne Antwort MUSS mindestens einen Hotel-Marker enthalten ([HOTELS:...] oder [HOTEL:...]). Eine Antwort ohne Marker ist wertlos.\nEs ist VERBOTEN, einen Hotelnamen im Text zu nennen, ohne ihn zugleich als Marker auszugeben. Nennen ohne Link hilft niemandem.\nVertroeste nie auf spaeter. Schreibe NIE Saetze wie 'Lass mich suchen', 'Ich suche dir gleich' oder 'Sag Bescheid, dann schicke ich Links'. Suche sofort und liefere in derselben Antwort.\n\nAUCH BEI VAGEN ANFRAGEN SOFORT LIEFERN:\nIst das Ziel unklar, waehle selbst das naheliegendste und liefere direkt 2-3 Hotels mit Links. Erst danach eine kurze Rueckfrage.\nBeispiel fuer 'Partyurlaub mit Freunden': Lloret de Mar waehlen, zwei guenstige Haeuser dort suchen, ausgeben, dann fragen ob ein anderes Ziel gewuenscht ist.\nFehlende Angaben wie Budget, Datum oder Personenzahl nimmst du an (2 Personen, mittleres Budget) statt zu fragen.\nHoechstens EINE Rueckfrage pro Antwort, immer NACH den Empfehlungen.\nWas im Verlauf steht, ist bekannt und wird nie erneut gefragt.\n\nRELEVANZ:\nUnsere eigenen Hotels (Liste unten) haben KEINEN Vorzug, pruefe sie genauso streng. Es zaehlt nur, ob Region, Art und Preis passen. Passt keines, erwaehne sie nicht.\n\nLINKS:\nFuer externe Hotels: web_search nutzen, Muster site:booking.com \\\"Hotelname\\\" Stadt\nDu brauchst die URL im Format https://www.booking.com/hotel/LAENDERCODE/name.html\nURLs gehoeren AUSSCHLIESSLICH in die Marker, NIEMALS in den Antworttext.\nErfinde keine URL. Kein Fund = anderes Hotel suchen.\nMaximal 2 Suchen. Bekannte Hotels (Liste unten) nicht erneut suchen.\n\nKEINE META-KOMMENTARE:\nSprich nie darueber, woher eine Empfehlung stammt oder was in unserer Auswahl ist." + profil + budgetHinweis + bekanntBlock + "\nUnsere Hotels:\n" + hotelContext + "\n\nAM ENDE JEDER ANTWORT (ohne Kommentar):\n[HOTELS:1,3] - wenn unsere Hotels passen\n[HOTEL:Hotelname|Stadt|https://www.booking.com/hotel/es/beispiel.html]\n[SUCHE:ort=Stadt;maxPreis=90;erwachsene=6]\n\nDie SUCHE-Zeile ist IMMER Pflicht, auch wenn Hotels gefunden wurden.",
+          system: "Du bist Hotel-Concierge auf MySpecialHotel.com. Deutsch, max 4 Saetze, kein Markdown.\n\nREGEL 1 - JEDES GENANNTE HOTEL BRAUCHT EINEN MARKER:\nNennst du im Text ein Hotel, MUSST du es am Ende auch als [HOTEL:...] ausgeben. Ein Hotel ohne Marker ist fuer den Gast nicht buchbar und damit wertlos.\nNenne NIE mehr Hotels im Text, als du Marker ausgibst. Lieber 2 Hotels mit Marker als 5 ohne.\nNach jeder web_search: JEDES gefundene Hotel sofort als Marker ausgeben.\n\nREGEL 2 - NICHT VERTROESTEN:\nSchreibe nie 'Ich suche jetzt', 'Lass mich raussuchen' oder aehnliches. Suche still und liefere nur das Ergebnis.\n\nREGEL 3 - LIEFERN STATT FRAGEN:\nJede Antwort enthaelt Hotels mit Markern.\nFehlt das Reiseziel voellig, waehle selbst zwei naheliegende, liefere fuer eines davon Hotels und frage dann, ob das passt.\nBudget, Datum und Personenzahl NIE erfragen - nimm Annahmen (2 Personen, mittleres Budget).\nHoechstens EINE Rueckfrage, immer nach den Empfehlungen.\nWas im Verlauf steht, ist bekannt und wird nie erneut gefragt.\n\nREGEL 4 - RELEVANZ:\nUnsere Hotels (Liste unten) haben KEINEN Vorzug, pruefe sie gleich streng. Region, Art und Preis muessen passen. Passt keines, erwaehne sie nicht.\nHalte das Preislimit strikt ein - ein zu teures Hotel wird ausgeblendet und deine Beschreibung steht dann ohne Hotel da.\n\nREGEL 5 - LINKS:\nweb_search nutzen, Muster: site:booking.com \\\"Hotelname\\\" Stadt\nURL-Format https://www.booking.com/hotel/LAENDERCODE/name.html\nURLs gehoeren NUR in die Marker, nie in den Text. Keine URL erfunden.\nMaximal 2 Suchen. Bekannte Hotels (Liste unten) nicht erneut suchen.\n\nKEINE META-KOMMENTARE ueber Herkunft der Empfehlung." + profil + budgetHinweis + bekanntBlock + "\nUnsere Hotels:\n" + hotelContext + "\n\nAM ENDE JEDER ANTWORT (ohne Kommentar):\n[HOTELS:1,3] - wenn unsere Hotels passen\n[HOTEL:Hotelname|Stadt|https://www.booking.com/hotel/es/beispiel.html] - pro Hotel eine Zeile\n[SUCHE:ort=Stadt;maxPreis=90;erwachsene=6]\n\nDie SUCHE-Zeile ist IMMER Pflicht.",
           messages: history,
           tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 2 }]
         })
@@ -376,10 +376,37 @@ function AIChat() {
       if (!res.ok) throw new Error("HTTP " + res.status);
 
       var data = await res.json();
-      var fullText = (data.content || []).map(function(b) { return b.text || ""; }).join("");
-      if (!fullText) throw new Error("Leere Antwort");
+      var bloecke = data.content || [];
 
-      var match = fullText.match(/\[HOTELS:([\d,]+)\]/);
+      // Bei einer Websuche liefert die API mehrere Textbloecke:
+      // einen VOR der Suche ("Ich suche jetzt...") und einen danach
+      // mit der eigentlichen Antwort. Nur der letzte gehoert angezeigt.
+      var textBloecke = bloecke
+        .filter(function(b) { return b.type === "text" || (!b.type && b.text); })
+        .map(function(b) { return (b.text || "").trim(); })
+        .filter(function(t) { return t.length > 0; });
+
+      if (textBloecke.length === 0) throw new Error("Leere Antwort");
+
+      var fullText = textBloecke[textBloecke.length - 1];
+      var alleTexte = textBloecke.join("\n");
+
+      // Booking-URLs aus den Suchergebnissen einsammeln.
+      // Die hat das Modell bereits gefunden - auch wenn es sie
+      // nicht sauber in die Marker uebernommen hat.
+      var gefundeneUrls = [];
+      (function sammle(x) {
+        if (!x) return;
+        if (Array.isArray(x)) { x.forEach(sammle); return; }
+        if (typeof x === "object") {
+          if (typeof x.url === "string" && /booking\.com\/hotel\/[a-z]{2}\//i.test(x.url)) {
+            gefundeneUrls.push({ url: x.url.split("?")[0], titel: x.title || "" });
+          }
+          Object.keys(x).forEach(function(k) { sammle(x[k]); });
+        }
+      })(bloecke);
+
+      var match = alleTexte.match(/\[HOTELS:([\d,]+)\]/);
       if (match) {
         var ids = match[1].split(",").map(Number);
         // Preislimit hart durchsetzen. Das Modell haelt sich nicht
@@ -396,9 +423,9 @@ function AIChat() {
       // Tracking. Also hier einsammeln und nachtraeglich umwandeln.
       var rohLinks = [];
       var rohRe = /https?:\/\/(?:www\.)?booking\.com\/hotel\/[a-z]{2}\/[^\s<>")\]]+/gi;
-      var rohTreffer = fullText.match(rohRe) || [];
+      var rohTreffer = alleTexte.match(rohRe) || [];
 
-      var hotelMatches = fullText.match(/\[HOTEL:[^\]]+\]/g);
+      var hotelMatches = alleTexte.match(/\[HOTEL:[^\]]+\]/g);
       var inMarkern = (hotelMatches || []).join(" ");
       rohTreffer.forEach(function(u) {
         var url = u.replace(/[.,;:]+$/, "");
@@ -433,19 +460,34 @@ function AIChat() {
         }));
       }
 
-      if (rohLinks.length > 0) {
-        var ausRoh = rohLinks.map(function(u) {
-          return { name: nameAusUrl(u), ort: "", url: track(u) };
-        });
+      // Kandidaten aus zwei Quellen: rohe URLs im Text und Treffer
+      // aus den Suchergebnissen. Beides nur als Ergaenzung zu den Markern.
+      var extra = rohLinks.map(function(u) {
+        return { name: nameAusUrl(u), ort: "", url: u };
+      });
+
+      gefundeneUrls.forEach(function(g) {
+        if (extra.some(function(e) { return e.url === g.url; })) return;
+        var name = (g.titel || "").split(/[,|–-]/)[0].trim();
+        if (!name || name.length < 3) name = nameAusUrl(g.url);
+        extra.push({ name: name, ort: "", url: g.url });
+      });
+
+      if (extra.length > 0) {
         setExternal(function(prev) {
-          var vorhanden = (prev || []).map(function(x) { return x.url; });
-          return (prev || []).concat(ausRoh.filter(function(x) {
-            return vorhanden.indexOf(x.url) === -1;
-          }));
+          var bisher = (prev || []).map(function(x) { return x.url; });
+          var neu = [];
+          extra.forEach(function(e) {
+            var t = track(e.url);
+            if (bisher.indexOf(t) !== -1) return;
+            if (neu.some(function(n) { return n.url === t; })) return;
+            neu.push({ name: e.name, ort: e.ort, url: t });
+          });
+          return (prev || []).concat(neu.slice(0, 4));
         });
       }
 
-      var sMatch = fullText.match(/\[SUCHE:([^\]]+)\]/);
+      var sMatch = alleTexte.match(/\[SUCHE:([^\]]+)\]/);
       var sParams = null;
       if (sMatch) {
         sParams = {};

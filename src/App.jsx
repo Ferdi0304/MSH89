@@ -1,14 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 
 const HOTELS = [
-  { id: 1, name: "Mont Cervin Palace", city: "Zermatt", country: "Schweiz", price: 320, rating: 4.8, reviews: 1243, img: "https://images.unsplash.com/photo-1640535092591-b9c35f4b138f?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Berge", "Luxus"], lastMinute: true, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/ch/mont-cervin-palace.de.html" },
-  { id: 2, name: "25hours Hotel Bikini Berlin", city: "Berlin", country: "Deutschland", price: 119, rating: 4.6, reviews: 3892, img: "https://images.unsplash.com/photo-1585405327087-ccddc9329fa5?w=800&q=80&auto=format&fit=crop", tags: ["Nomad", "Design", "Zentral"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/de/25hours-bikini-berlin.de.html" },
-  { id: 3, name: "Hotel Negresco", city: "Nizza", country: "Frankreich", price: 280, rating: 4.7, reviews: 2156, img: "https://images.unsplash.com/photo-1491166617655-0723a0999cfc?w=800&q=80&auto=format&fit=crop", tags: ["Meer", "Luxus", "Historisch"], lastMinute: true, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/fr/negresco.de.html" },
-  { id: 4, name: "25hours Hotel MuseumsQuartier", city: "Wien", country: "Oesterreich", price: 89, rating: 4.5, reviews: 2445, img: "https://images.unsplash.com/photo-1646491311728-f4a676e5f17d?w=800&q=80&auto=format&fit=crop", tags: ["Nomad", "Design", "Zentral"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/at/25hours-wien.de.html" },
-  { id: 5, name: "Gritti Palace Venice", city: "Venedig", country: "Italien", price: 650, rating: 4.9, reviews: 1876, img: "https://images.unsplash.com/photo-1558271736-cd043ef2e855?w=800&q=80&auto=format&fit=crop", tags: ["Luxus", "Romantik", "Historisch"], lastMinute: true, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/it/gritti-palace.de.html" },
-  { id: 6, name: "Dollenberg Relais & Chateaux", city: "Bad Peterstal", country: "Deutschland", price: 195, rating: 4.8, reviews: 1334, img: "https://images.unsplash.com/photo-1720951901235-8d865c940454?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Spa", "Natur"], lastMinute: true, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/de/dollenberg.de.html" },
-  { id: 7, name: "Casa Camper Barcelona", city: "Barcelona", country: "Spanien", price: 145, rating: 4.7, reviews: 2891, img: "https://images.unsplash.com/photo-1578095172812-dcc191c5aed8?w=800&q=80&auto=format&fit=crop", tags: ["Design", "Nomad", "Zentral"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/es/casa-camper.de.html" },
-  { id: 8, name: "Interalpen-Hotel Tyrol", city: "Telfs", country: "Oesterreich", price: 280, rating: 4.9, reviews: 2134, img: "https://images.unsplash.com/photo-1607453813894-21f7b5cf201a?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Spa", "Berge"], lastMinute: true, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/at/interalpen-tyrol.de.html" },
+  { id: 1, name: "Mont Cervin Palace", preisIntern: 320, city: "Zermatt", country: "Schweiz", img: "https://images.unsplash.com/photo-1640535092591-b9c35f4b138f?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Berge", "Luxus"], lastMinute: true, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/ch/mont-cervin-palace.de.html" },
+  { id: 2, name: "25hours Hotel Bikini Berlin", preisIntern: 119, city: "Berlin", country: "Deutschland", img: "https://images.unsplash.com/photo-1585405327087-ccddc9329fa5?w=800&q=80&auto=format&fit=crop", tags: ["Nomad", "Design", "Zentral"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/de/25hours-bikini-berlin.de.html" },
+  { id: 3, name: "Hotel Negresco", preisIntern: 280, city: "Nizza", country: "Frankreich", img: "https://images.unsplash.com/photo-1491166617655-0723a0999cfc?w=800&q=80&auto=format&fit=crop", tags: ["Meer", "Luxus", "Historisch"], lastMinute: true, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/fr/negresco.de.html" },
+  { id: 4, name: "25hours Hotel MuseumsQuartier", preisIntern: 89, city: "Wien", country: "Oesterreich", img: "https://images.unsplash.com/photo-1646491311728-f4a676e5f17d?w=800&q=80&auto=format&fit=crop", tags: ["Nomad", "Design", "Zentral"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/at/25hours-wien.de.html" },
+  { id: 5, name: "Gritti Palace Venice", preisIntern: 650, city: "Venedig", country: "Italien", img: "https://images.unsplash.com/photo-1558271736-cd043ef2e855?w=800&q=80&auto=format&fit=crop", tags: ["Luxus", "Romantik", "Historisch"], lastMinute: true, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/it/gritti-palace.de.html" },
+  { id: 6, name: "Dollenberg Relais & Chateaux", preisIntern: 195, city: "Bad Peterstal", country: "Deutschland", img: "https://images.unsplash.com/photo-1720951901235-8d865c940454?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Spa", "Natur"], lastMinute: true, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/de/dollenberg.de.html" },
+  { id: 7, name: "Casa Camper Barcelona", preisIntern: 145, city: "Barcelona", country: "Spanien", img: "https://images.unsplash.com/photo-1578095172812-dcc191c5aed8?w=800&q=80&auto=format&fit=crop", tags: ["Design", "Nomad", "Zentral"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/es/casa-camper.de.html" },
+  { id: 8, name: "Interalpen-Hotel Tyrol", preisIntern: 280, city: "Telfs", country: "Oesterreich", img: "https://images.unsplash.com/photo-1607453813894-21f7b5cf201a?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Spa", "Berge"], lastMinute: true, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/at/interalpen-tyrol.de.html" },
 ];
 
 const ACCENT = "#C9960C";
@@ -191,7 +191,7 @@ function kuratierteTreffer(wunsch) {
       if (hLand.indexOf(land) === -1 && land.indexOf(hLand) === -1) return false;
     }
 
-    if (wunsch.maxPreis && h.price > wunsch.maxPreis * 1.1) return false;
+    if (wunsch.maxPreis && h.preisIntern > wunsch.maxPreis * 1.1) return false;
     return true;
   }).slice(0, 3);
 }
@@ -248,33 +248,23 @@ function searchUrl(params) {
 
 function HotelCard({ hotel, highlight }) {
   const url = track(hotel.url);
+  // Keine Sterne, keine Bewertungszahlen, keine Preisangabe:
+  // Diese Werte kennen wir nicht. Erfundene Angaben waeren nach
+  // UWG irrefuehrend. Der echte Stand steht bei Booking.
   return (
     <div className="card" style={{ background: "#fff", border: "1px solid " + (highlight ? ACCENT : BORDER), borderRadius: 16, overflow: "hidden", boxShadow: highlight ? "0 0 0 2px " + ACCENT + "22" : "0 2px 8px rgba(0,0,0,0.06)" }}>
       <div style={{ position: "relative", height: 190 }}>
-        <img src={hotel.img} alt={hotel.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.45) 0%, transparent 55%)" }} />
-        {hotel.lastMinute && <span style={{ position: "absolute", top: 12, left: 12, background: "#ef4444", color: "#fff", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700 }}>Blitz LAST MINUTE</span>}
+        <img src={hotel.img} alt={hotel.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 55%)" }} />
         {hotel.nomad && <span style={{ position: "absolute", top: 12, left: 12, background: "#10b981", color: "#fff", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700 }}>Laptop NOMAD</span>}
-        <span style={{ position: "absolute", bottom: 10, left: 12, color: "#fff", fontSize: 12, fontFamily: "Inter, sans-serif" }}>{hotel.city}, {hotel.country}</span>
+        <span style={{ position: "absolute", bottom: 10, left: 12, color: "#fff", fontSize: 12, fontFamily: "Inter, sans-serif", textShadow: "0 1px 3px rgba(0,0,0,0.5)" }}>{hotel.city}, {hotel.country}</span>
       </div>
-      <div style={{ padding: 16 }}>
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 8 }}>{hotel.name}</div>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
-          {hotel.tags.map(function(t) { return <span key={t} style={{ background: ACCENT_LIGHT, color: ACCENT, padding: "2px 8px", borderRadius: 8, fontSize: 11, fontFamily: "Inter, sans-serif", fontWeight: 500 }}>{t}</span>; })}
+      <div style={{ padding: 18 }}>
+        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 17, fontWeight: 700, color: TEXT, marginBottom: 10, lineHeight: 1.3 }}>{hotel.name}</div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+          {hotel.tags.map(function(t) { return <span key={t} style={{ background: ACCENT_LIGHT, color: ACCENT, padding: "3px 9px", borderRadius: 8, fontSize: 11, fontFamily: "Inter, sans-serif", fontWeight: 500 }}>{t}</span>; })}
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-          <div>
-            <div style={{ color: ACCENT, fontSize: 13, fontFamily: "Inter, sans-serif", marginBottom: 2 }}>
-              Stern {hotel.rating} <span style={{ color: GRAY, fontSize: 11 }}>({hotel.reviews} Bewertungen)</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
-              <span style={{ fontSize: 12, color: GRAY, fontFamily: "Inter, sans-serif" }}>ab</span>
-              <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: TEXT }}>EUR{hotel.price}</span>
-              <span style={{ fontSize: 11, color: GRAY, fontFamily: "Inter, sans-serif" }}>/Nacht</span>
-            </div>
-          </div>
-          <a href={url} target="_blank" rel="noopener noreferrer" className="btn-gold" style={{ padding: "9px 18px", fontSize: 12 }}>Buchen →</a>
-        </div>
+        <a href={url} target="_blank" rel="noopener noreferrer" className="btn-gold" style={{ display: "block", textAlign: "center", padding: "11px 18px", fontSize: 13 }}>Preis &amp; Verfuegbarkeit →</a>
       </div>
     </div>
   );
@@ -755,7 +745,7 @@ export default function App() {
             </div>
           </div>
           <div className="stats">
-            {[["8+","Hotels"],["4.7","Bewertung"],["Bis -45%","Ersparnis"],["100%","Kostenlos"]].map(function(item) {
+            {[["8","Kuratierte Hotels"],["2 Mio+","Unterkuenfte"],["Taeglich","Neue Auswahl"],["100%","Kostenlos"]].map(function(item) {
               return <div key={item[1]} className="stat">
                 <div className="stat-n">{item[0]}</div>
                 <div className="stat-l">{item[1]}</div>
@@ -885,6 +875,14 @@ export default function App() {
         <div style={{ maxWidth: 800, margin: "0 auto", padding: "48px 24px" }}>
           <button onClick={function() { setTab("home"); }} style={{ marginBottom: 24, background: "none", border: "1px solid " + BORDER, borderRadius: 8, padding: "8px 16px", cursor: "pointer", color: GRAY, fontFamily: "Inter, sans-serif", fontSize: 13 }}>← Zurück</button>
           <h1 className="section-h" style={{ fontFamily: "'Playfair Display', serif", fontSize: 36, fontWeight: 900, color: TEXT, marginBottom: 32 }}>Datenschutzerklärung</h1>
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 8 }}Stand: Juli 2026</p>
+        </div>
+      )}
+
+      {tab === "datenschutz" && (
+        <div style={{ maxWidth: 800, margin: "0 auto", padding: "48px 24px" }}>
+          <button onClick={function() { setTab("home"); }} style={{ marginBottom: 24, background: "none", border: "1px solid " + BORDER, borderRadius: 8, padding: "8px 16px", cursor: "pointer", color: GRAY, fontFamily: "Inter, sans-serif", fontSize: 13 }}>← Zurück</button>
+          <h1 className="section-h" style={{ fontFamily: "'Playfair Display', serif", fontSize: 36, fontWeight: 900, color: TEXT, marginBottom: 32 }}>Datenschutzerklärung</h1>
           <h2 style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 8 }}>1. Verantwortlicher</h2>
           <p style={{ color: GRAY, lineHeight: 2, fontSize: 15 }}>Fernando Arias Texeira<br />Alsbacher Weg 3, 14163 Berlin<br />E-Mail: info@myspecialhotel.com<br />Telefon: +49 163 5946140</p>
           <h2 style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 8, marginTop: 28 }}>2. Hosting (Vercel)</h2>
@@ -893,9 +891,18 @@ export default function App() {
           <p style={{ color: GRAY, lineHeight: 2, fontSize: 15 }}>Diese Website enthält Affiliate-Links zu Booking.com (Booking.com B.V., Herengracht 597, 1017 CE Amsterdam, Niederlande). Bei Buchung über einen solchen Link erhalten wir eine Provision. Für dich entstehen keine Mehrkosten. Booking.com kann beim Klick Cookies setzen und dein Verhalten tracken. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO. Weitere Infos: www.booking.com/content/privacy.html</p>
           <h2 style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 8, marginTop: 28 }}>4. KI-Chat (Anthropic Claude API)</h2>
           <p style={{ color: GRAY, lineHeight: 2, fontSize: 15 }}>Unser KI-Hotel-Berater nutzt die Claude API von Anthropic, PBC (548 Market St, San Francisco, CA 94104, USA). Deine Texteingaben werden zur Verarbeitung an Anthropic übertragen. Chatverläufe werden nicht dauerhaft auf unseren Servern gespeichert. Rechtsgrundlage: Art. 6 Abs. 1 lit. a DSGVO. Weitere Infos: https://www.anthropic.com/privacy</p>
-          <h2 style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 8, marginTop: 28 }}>5. Cookies</h2>
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 8, marginTop: 28 }}>5. Affiliate-Netzwerk (CJ Affiliate)</h2>
+          <p style={{ color: GRAY, lineHeight: 2, fontSize: 15 }}>Die Vermittlung unserer Buchungslinks erfolgt über das Affiliate-Netzwerk CJ Affiliate (Commission Junction LLC, 530 East Montecito Street, Santa Barbara, CA 93103, USA). Beim Klick auf einen Buchungslink wirst du kurzzeitig über einen Server von CJ Affiliate (z.&nbsp;B. kqzyfj.com, anrdoezrs.net) weitergeleitet. Dabei werden deine IP-Adresse, Datum und Uhrzeit sowie die aufgerufene Seite verarbeitet und ein Cookie gesetzt, damit eine spätere Buchung uns zugeordnet werden kann. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an der Provisionsabrechnung). Die Übermittlung in die USA erfolgt auf Grundlage von Standardvertragsklauseln. Weitere Infos: https://www.cj.com/legal/privacy-policy-april-2020</p>
+
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 8, marginTop: 28 }}>6. Bilder (Unsplash)</h2>
+          <p style={{ color: GRAY, lineHeight: 2, fontSize: 15 }}>Die auf dieser Website gezeigten Fotos werden von Servern der Unsplash Inc. (2-30 Duncan Street, Toronto, ON M5V 2C3, Kanada) geladen. Beim Aufruf einer Seite mit Bildern wird deine IP-Adresse an Unsplash übertragen. Für Kanada besteht ein Angemessenheitsbeschluss der EU-Kommission. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an einer ansprechenden Darstellung). Weitere Infos: https://unsplash.com/privacy</p>
+
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 8, marginTop: 28 }}>7. Hinweis zu Preisen und Bewertungen</h2>
+          <p style={{ color: GRAY, lineHeight: 2, fontSize: 15 }}>Wir zeigen auf dieser Website keine eigenen Preisangaben und keine eigenen Bewertungen an. Aktuelle Preise, Verfügbarkeiten und Gästebewertungen werden ausschließlich von Booking.com bereitgestellt und sind erst nach dem Klick auf einen Buchungslink dort einsehbar. Unsere Hotelauswahl stellt eine redaktionelle Empfehlung dar.</p>
+
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 8, marginTop: 28 }}>8. Cookies</h2>
           <p style={{ color: GRAY, lineHeight: 2, fontSize: 15 }}>Wir setzen ausschließlich technisch notwendige Cookies ein (Speicherung deiner Cookie-Einwilligung via localStorage). Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO. Affiliate-Links zu Booking.com können nach dem Klick zu Drittanbieter-Cookies führen, auf die wir keinen Einfluss haben.</p>
-          <h2 style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 8, marginTop: 28 }}>6. Deine Rechte (Art. 15–22 DSGVO)</h2>
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 8, marginTop: 28 }}>9. Deine Rechte (Art. 15–22 DSGVO)</h2>
           <ul style={{ color: GRAY, lineHeight: 2.2, fontSize: 15, paddingLeft: 24 }}>
             <li>Recht auf Auskunft (Art. 15 DSGVO)</li>
             <li>Recht auf Berichtigung (Art. 16 DSGVO)</li>
@@ -905,7 +912,7 @@ export default function App() {
             <li>Widerspruchsrecht (Art. 21 DSGVO)</li>
           </ul>
           <p style={{ color: GRAY, lineHeight: 2, fontSize: 15, marginTop: 12 }}>Anfragen an: info@myspecialhotel.com. Beschwerderecht bei der Berliner Beauftragten für Datenschutz und Informationsfreiheit.</p>
-          <h2 style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 8, marginTop: 28 }}>7. Änderungen</h2>
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 8, marginTop: 28 }}>10. Änderungen</h2>
           <p style={{ color: GRAY, lineHeight: 2, fontSize: 15 }}>Wir behalten uns vor, diese Datenschutzerklärung bei Bedarf zu aktualisieren.</p>
           <p style={{ color: GRAY, fontSize: 13, marginTop: 32, fontStyle: "italic" }}>Stand: Juli 2026</p>
         </div>

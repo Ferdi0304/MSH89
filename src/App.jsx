@@ -579,28 +579,23 @@ function AIChat() {
 }
 
 // Zeigt die taeglich per Websuche gefundenen Unterkuenfte.
-// Die Daten kommen aus /api/deals und werden dort 24 Stunden
-// zwischengespeichert - der Aufruf hier kostet also nichts extra.
+// Die Daten kommen aus /api/deals und liegen dort 24 Stunden im
+// Zwischenspeicher - der Aufruf hier kostet also nichts extra.
 function TaeglicheListe({ typ }) {
-  var [hotels, setHotels] = useState(null);
-  var [stand, setStand] = useState("");
+  var [daten, setDaten] = useState(null);
 
   useEffect(function() {
     var abgebrochen = false;
     fetch("/api/deals?typ=" + typ)
       .then(function(r) { return r.json(); })
-      .then(function(d) {
-        if (abgebrochen) return;
-        setHotels(Array.isArray(d.hotels) ? d.hotels : []);
-        setStand(d.stand || "");
-      })
-      .catch(function() { if (!abgebrochen) setHotels([]); });
+      .then(function(d) { if (!abgebrochen) setDaten(d); })
+      .catch(function() { if (!abgebrochen) setDaten({ hotels: [] }); });
     return function() { abgebrochen = true; };
   }, [typ]);
 
-  if (hotels === null) {
+  if (daten === null) {
     return (
-      <div style={{ textAlign: "center", padding: "40px 0", color: GRAY, fontSize: 14 }}>
+      <div style={{ textAlign: "center", padding: "44px 0", color: GRAY, fontSize: 14 }}>
         <div style={{ display: "inline-flex", gap: 5, marginBottom: 12 }}>
           {[0,1,2].map(function(i) {
             return <div key={i} style={{ width: 7, height: 7, borderRadius: "50%", background: ACCENT, animation: "bounce 1.2s " + (i * 0.2) + "s infinite" }} />;
@@ -611,6 +606,8 @@ function TaeglicheListe({ typ }) {
     );
   }
 
+  var hotels = Array.isArray(daten.hotels) ? daten.hotels : [];
+
   if (hotels.length === 0) {
     return (
       <div style={{ textAlign: "center", padding: "36px 24px", background: "#f9fafb", border: "1px solid " + BORDER, borderRadius: 16, color: GRAY, fontSize: 14 }}>
@@ -619,30 +616,48 @@ function TaeglicheListe({ typ }) {
     );
   }
 
+  // Zeitraum an den Link haengen: so zeigt Booking echte Preise
+  // fuer die kommenden Tage statt allgemeiner Listenpreise.
+  var z = daten.zeitraum || {};
+  var mitDatum = function(url) {
+    var u = url;
+    if (z.checkin && z.checkout) {
+      u += (u.indexOf("?") === -1 ? "?" : "&")
+        + "checkin=" + z.checkin + "&checkout=" + z.checkout
+        + "&selected_currency=EUR&lang=de";
+    }
+    return track(u);
+  };
+
   return (
     <div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px,1fr))", gap: 20 }} className="hotel-grid">
         {hotels.map(function(h, i) {
           return (
-            <a key={i} href={track(h.url)} target="_blank" rel="noopener noreferrer"
-               style={{ display: "block", background: "#fff", border: "1.5px solid " + BORDER, borderRadius: 16, padding: "18px 20px", textDecoration: "none", transition: "all 0.2s" }}
-               onMouseEnter={function(e) { e.currentTarget.style.borderColor = ACCENT; }}
-               onMouseLeave={function(e) { e.currentTarget.style.borderColor = BORDER; }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 700, color: TEXT, marginBottom: 3 }}>{h.name}</div>
-                  <div style={{ fontSize: 12, color: ACCENT, marginBottom: 8 }}>{h.stadt}{h.land ? ", " + h.land : ""}</div>
-                  {h.beschreibung && <div style={{ fontSize: 13, color: GRAY, lineHeight: 1.6 }}>{h.beschreibung}</div>}
+            <a key={i} href={mitDatum(h.url)} target="_blank" rel="noopener noreferrer"
+               className="card"
+               style={{ display: "block", background: "#fff", border: "1px solid " + BORDER, borderRadius: 16, overflow: "hidden", textDecoration: "none", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+              <div style={{ position: "relative", height: 150, overflow: "hidden", background: "linear-gradient(135deg,#e8dcc0,#c9a961)" }}>
+                {h.bild && <img src={h.bild} alt={h.stadt} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.55), transparent 55%)" }} />
+                <div style={{ position: "absolute", bottom: 10, left: 12, color: "#fff", fontSize: 13, fontWeight: 600, textShadow: "0 1px 3px rgba(0,0,0,0.5)" }}>
+                  {h.stadt}{h.land ? ", " + h.land : ""}
                 </div>
-                <span className="btn-gold" style={{ padding: "9px 17px", fontSize: 12, whiteSpace: "nowrap", flexShrink: 0 }}>Ansehen →</span>
+              </div>
+              <div style={{ padding: 16 }}>
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 17, fontWeight: 700, color: TEXT, marginBottom: 6, lineHeight: 1.3 }}>{h.name}</div>
+                {h.beschreibung && <div style={{ fontSize: 13, color: GRAY, lineHeight: 1.55, marginBottom: 14 }}>{h.beschreibung}</div>}
+                <span className="btn-gold" style={{ display: "inline-block", padding: "9px 18px", fontSize: 12 }}>Preis ansehen →</span>
               </div>
             </a>
           );
         })}
       </div>
-      {stand && (
-        <div style={{ textAlign: "center", marginTop: 16, fontSize: 11, color: GRAY }}>
-          Auswahl vom {stand.split("-").reverse().join(".")} - Preise und Verfuegbarkeit siehst du bei Booking.com
+
+      {z.checkin && (
+        <div style={{ textAlign: "center", marginTop: 18, fontSize: 12, color: GRAY, lineHeight: 1.6 }}>
+          Preise werden fuer {z.checkin.split("-").reverse().join(".")} bis {z.checkout.split("-").reverse().join(".")} angezeigt.<br />
+          Aktuelle Verfuegbarkeit und Preis siehst du bei Booking.com.
         </div>
       )}
     </div>
@@ -788,9 +803,9 @@ export default function App() {
       {tab === "deals" && (
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "48px 24px" }} className="page-padding">
           <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <div style={{ display: "inline-block", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 20, padding: "5px 16px", fontSize: 12, color: "#ef4444", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", marginBottom: 16 }}>Taeglich aktualisiert</div>
+            <div style={{ display: "inline-block", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 20, padding: "5px 16px", fontSize: 12, color: "#ef4444", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", marginBottom: 16 }}>Taeglich neu recherchiert</div>
             <h2 className="section-h" style={{ fontFamily: "'Playfair Display', serif", fontSize: 40, fontWeight: 900, color: TEXT }}>Last Minute Deals</h2>
-            <p style={{ color: GRAY, marginTop: 10, fontSize: 16 }}>Taeglich neu recherchierte Unterkuenfte</p>
+            <p style={{ color: GRAY, marginTop: 10, fontSize: 16 }}>Guenstige Unterkuenfte, taeglich neu recherchiert</p>
           </div>
 
           <TaeglicheListe typ="deals" />

@@ -232,6 +232,22 @@ function stripMarkers(t) {
     .trim();
 }
 
+// Baut aus einer Booking-URL einen lesbaren Hotelnamen.
+// Wird gebraucht, wenn die Suche zwar eine URL liefert, aber
+// keinen brauchbaren Namen dazu.
+function nameAusUrl(u) {
+  try {
+    var teil = u.split("/hotel/")[1].split("/")[1] || "";
+    teil = teil.split("?")[0].replace(/\.(de|en|[a-z]{2})?\.?html?$/i, "");
+    var w = teil.split("-").filter(Boolean).map(function(s) {
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    });
+    return w.join(" ") || "Unterkunft ansehen";
+  } catch (e) {
+    return "Unterkunft ansehen";
+  }
+}
+
 function searchUrl(params) {
   var q = params.ort || "";
   var u = "https://www.booking.com/searchresults.de.html?ss=" + encodeURIComponent(q);
@@ -442,7 +458,7 @@ function AIChat() {
         '{"text":"2 Saetze auf Deutsch ueber die gefundenen Haeuser","hotels":' +
         '[{"name":"Hotelname","url":"https://www.booking.com/hotel/xx/name.html"}]}\n\n' +
         "Im 'text' darfst du NUR Haeuser erwaehnen, die auch in 'hotels' stehen. " +
-        "Keine Preise nennen, die du nicht gepruefte hast. Keine Rueckfragen.",
+        "Keine Preise nennen, die du nicht geprueft hast. Keine Rueckfragen.",
         [{ role: "user", content: auftrag }],
         true
       );

@@ -126,6 +126,17 @@ function hotelKey(name) {
   return (name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
+// Baut aus einer Booking-URL wie /hotel/it/gritti-palace.de.html
+// einen lesbaren Namen ("Gritti Palace"). Nur Notnagel, falls im
+// Suchtreffer kein Titel steht - besser als eine leere Karte.
+function nameAusUrl(url) {
+  var m = (url || "").match(/\/hotel\/[a-z]{2}\/([^\/?.]+)/i);
+  if (!m) return "Unterkunft";
+  var roh = m[1].replace(/-/g, " ").trim();
+  if (!roh) return "Unterkunft";
+  return roh.replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+}
+
 function loadCache() {
   try {
     var raw = localStorage.getItem("msh_hotels");
@@ -230,22 +241,6 @@ function stripMarkers(t) {
     .replace(/\n{3,}/g, "\n\n")
     .replace(/^\s*[\n]+/, "")
     .trim();
-}
-
-// Baut aus einer Booking-URL einen lesbaren Hotelnamen.
-// Wird gebraucht, wenn die Suche zwar eine URL liefert, aber
-// keinen brauchbaren Namen dazu.
-function nameAusUrl(u) {
-  try {
-    var teil = u.split("/hotel/")[1].split("/")[1] || "";
-    teil = teil.split("?")[0].replace(/\.(de|en|[a-z]{2})?\.?html?$/i, "");
-    var w = teil.split("-").filter(Boolean).map(function(s) {
-      return s.charAt(0).toUpperCase() + s.slice(1);
-    });
-    return w.join(" ") || "Unterkunft ansehen";
-  } catch (e) {
-    return "Unterkunft ansehen";
-  }
 }
 
 function searchUrl(params) {

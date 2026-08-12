@@ -1,14 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 
 const HOTELS = [
-  { id: 1, name: "Mont Cervin Palace", preisIntern: 320, city: "Zermatt", country: "Schweiz", img: "https://images.unsplash.com/photo-1640535092591-b9c35f4b138f?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Berge", "Luxus"], lastMinute: true, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/ch/mont-cervin-palace.de.html" },
-  { id: 2, name: "25hours Hotel Bikini Berlin", preisIntern: 119, city: "Berlin", country: "Deutschland", img: "https://images.unsplash.com/photo-1585405327087-ccddc9329fa5?w=800&q=80&auto=format&fit=crop", tags: ["Nomad", "Design", "Zentral"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/de/25hours-bikini-berlin.de.html" },
-  { id: 3, name: "Hotel Negresco", preisIntern: 280, city: "Nizza", country: "Frankreich", img: "https://images.unsplash.com/photo-1491166617655-0723a0999cfc?w=800&q=80&auto=format&fit=crop", tags: ["Meer", "Luxus", "Historisch"], lastMinute: true, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/fr/negresco.de.html" },
-  { id: 4, name: "25hours Hotel MuseumsQuartier", preisIntern: 89, city: "Wien", country: "Oesterreich", img: "https://images.unsplash.com/photo-1646491311728-f4a676e5f17d?w=800&q=80&auto=format&fit=crop", tags: ["Nomad", "Design", "Zentral"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/at/25hours-wien.de.html" },
-  { id: 5, name: "Gritti Palace Venice", preisIntern: 650, city: "Venedig", country: "Italien", img: "https://images.unsplash.com/photo-1558271736-cd043ef2e855?w=800&q=80&auto=format&fit=crop", tags: ["Luxus", "Romantik", "Historisch"], lastMinute: true, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/it/gritti-palace.de.html" },
-  { id: 6, name: "Dollenberg Relais & Chateaux", preisIntern: 195, city: "Bad Peterstal", country: "Deutschland", img: "https://images.unsplash.com/photo-1720951901235-8d865c940454?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Spa", "Natur"], lastMinute: true, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/de/dollenberg.de.html" },
-  { id: 7, name: "Casa Camper Barcelona", preisIntern: 145, city: "Barcelona", country: "Spanien", img: "https://images.unsplash.com/photo-1578095172812-dcc191c5aed8?w=800&q=80&auto=format&fit=crop", tags: ["Design", "Nomad", "Zentral"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/es/casa-camper.de.html" },
-  { id: 8, name: "Interalpen-Hotel Tyrol", preisIntern: 280, city: "Telfs", country: "Oesterreich", img: "https://images.unsplash.com/photo-1607453813894-21f7b5cf201a?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Spa", "Berge"], lastMinute: true, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/at/interalpen-tyrol.de.html" },
+  { id: 1, name: "Mont Cervin Palace", preisIntern: 320, city: "Zermatt", country: "Schweiz", img: "https://images.unsplash.com/photo-1640535092591-b9c35f4b138f?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Berge", "Luxus"], nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/ch/mont-cervin-palace.de.html" },
+  { id: 2, name: "25hours Hotel Bikini Berlin", preisIntern: 119, city: "Berlin", country: "Deutschland", img: "https://images.unsplash.com/photo-1585405327087-ccddc9329fa5?w=800&q=80&auto=format&fit=crop", tags: ["Nomad", "Design", "Zentral"], nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/de/25hours-bikini-berlin.de.html" },
+  { id: 3, name: "Hotel Negresco", preisIntern: 280, city: "Nizza", country: "Frankreich", img: "https://images.unsplash.com/photo-1491166617655-0723a0999cfc?w=800&q=80&auto=format&fit=crop", tags: ["Meer", "Luxus", "Historisch"], nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/fr/negresco.de.html" },
+  { id: 4, name: "25hours Hotel MuseumsQuartier", preisIntern: 89, city: "Wien", country: "Oesterreich", img: "https://images.unsplash.com/photo-1646491311728-f4a676e5f17d?w=800&q=80&auto=format&fit=crop", tags: ["Nomad", "Design", "Zentral"], nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/at/25hours-wien.de.html" },
+  { id: 5, name: "Gritti Palace Venice", preisIntern: 650, city: "Venedig", country: "Italien", img: "https://images.unsplash.com/photo-1558271736-cd043ef2e855?w=800&q=80&auto=format&fit=crop", tags: ["Luxus", "Romantik", "Historisch"], nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/it/gritti-palace.de.html" },
+  { id: 6, name: "Dollenberg Relais & Chateaux", preisIntern: 195, city: "Bad Peterstal", country: "Deutschland", img: "https://images.unsplash.com/photo-1720951901235-8d865c940454?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Spa", "Natur"], nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/de/dollenberg.de.html" },
+  { id: 7, name: "Casa Camper Barcelona", preisIntern: 145, city: "Barcelona", country: "Spanien", img: "https://images.unsplash.com/photo-1578095172812-dcc191c5aed8?w=800&q=80&auto=format&fit=crop", tags: ["Design", "Nomad", "Zentral"], nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/es/casa-camper.de.html" },
+  { id: 8, name: "Interalpen-Hotel Tyrol", preisIntern: 280, city: "Telfs", country: "Oesterreich", img: "https://images.unsplash.com/photo-1607453813894-21f7b5cf201a?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Spa", "Berge"], nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/at/interalpen-tyrol.de.html" },
 ];
 
 const ACCENT = "#C9960C";
@@ -126,17 +126,6 @@ function hotelKey(name) {
   return (name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-// Baut aus einer Booking-URL wie /hotel/it/gritti-palace.de.html
-// einen lesbaren Namen ("Gritti Palace"). Nur Notnagel, falls im
-// Suchtreffer kein Titel steht - besser als eine leere Karte.
-function nameAusUrl(url) {
-  var m = (url || "").match(/\/hotel\/[a-z]{2}\/([^\/?.]+)/i);
-  if (!m) return "Unterkunft";
-  var roh = m[1].replace(/-/g, " ").trim();
-  if (!roh) return "Unterkunft";
-  return roh.replace(/\b\w/g, function(c) { return c.toUpperCase(); });
-}
-
 function loadCache() {
   try {
     var raw = localStorage.getItem("msh_hotels");
@@ -241,6 +230,22 @@ function stripMarkers(t) {
     .replace(/\n{3,}/g, "\n\n")
     .replace(/^\s*[\n]+/, "")
     .trim();
+}
+
+// Baut aus einer Booking-URL einen lesbaren Hotelnamen.
+// Wird gebraucht, wenn die Suche zwar eine URL liefert, aber
+// keinen brauchbaren Namen dazu.
+function nameAusUrl(u) {
+  try {
+    var teil = u.split("/hotel/")[1].split("/")[1] || "";
+    teil = teil.split("?")[0].replace(/\.(de|en|[a-z]{2})?\.?html?$/i, "");
+    var w = teil.split("-").filter(Boolean).map(function(s) {
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    });
+    return w.join(" ") || "Unterkunft ansehen";
+  } catch (e) {
+    return "Unterkunft ansehen";
+  }
 }
 
 function searchUrl(params) {
@@ -717,10 +722,9 @@ export default function App() {
     var matchSearch = q === "" || h.name.toLowerCase().includes(q) || h.city.toLowerCase().includes(q) || h.country.toLowerCase().includes(q) || h.tags.some(function(t) { return t.toLowerCase().includes(q); });
     return matchCat && matchSearch;
   });
-  var deals = HOTELS.filter(function(h) { return h.lastMinute; });
   var nomads = HOTELS.filter(function(h) { return h.nomad; });
 
-  var TABS = [["home","Start"],["deals","Deals"],["nomad","Nomad"],["ai","KI-Berater"]];
+  var TABS = [["home","Start"],["nomad","Nomad"],["ai","KI-Berater"]];
   var CATS = [["all","Alle"],["wellness","Wellness"],["design","Design"],["luxury","Luxus"],["nomad","Nomad"]];
 
   return (
@@ -748,10 +752,10 @@ export default function App() {
               <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(38px,7vw,80px)", fontWeight: 900, lineHeight: 1.08, color: TEXT, marginBottom: 20 }} className="hero-title">
                 Dein perfektes<br /><span style={{ color: ACCENT }}>Hotel</span>, jederzeit.
               </h1>
-              <p style={{ fontSize: 18, color: GRAY, maxWidth: 500, margin: "0 auto 36px", lineHeight: 1.7 }}>KI-Beratung - Last Minute Deals - Nomad-Hotels.<br />Alles an einem Ort, kostenlos und ehrlich.</p>
+              <p style={{ fontSize: 18, color: GRAY, maxWidth: 500, margin: "0 auto 36px", lineHeight: 1.7 }}>KI-Beratung - kuratierte Hotels - Nomad-Unterkuenfte.<br />Alles an einem Ort, kostenlos und ehrlich.</p>
               <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }} className="hero-buttons">
                 <button onClick={function() { setTab("ai"); }} className="btn-gold" style={{ fontSize: 15, padding: "14px 28px", borderRadius: 12, boxShadow: "0 4px 20px rgba(201,150,12,0.3)" }}>KI-Berater starten</button>
-                <button onClick={function() { setTab("deals"); }} style={{ background: "#fff", border: "1.5px solid " + BORDER, borderRadius: 12, padding: "14px 28px", color: TEXT, fontWeight: 600, fontSize: 15, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>Last Minute Deals</button>
+                <button onClick={function() { setTab("nomad"); }} style={{ background: "#fff", border: "1.5px solid " + BORDER, borderRadius: 12, padding: "14px 28px", color: TEXT, fontWeight: 600, fontSize: 15, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>Nomad Hotels</button>
               </div>
             </div>
           </div>
@@ -797,28 +801,6 @@ export default function App() {
                 <button onClick={function() { setSearch(""); setCat("all"); }} style={{ marginTop: 12, background: ACCENT, color: "#fff", border: "none", borderRadius: 20, padding: "8px 20px", cursor: "pointer", fontFamily: "Inter, sans-serif", fontWeight: 600 }}>Suche zurücksetzen</button>
               </div>
             )}
-          </div>
-        </div>
-      )}
-
-      {tab === "deals" && (
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "48px 24px" }} className="page-padding">
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <div style={{ display: "inline-block", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 20, padding: "5px 16px", fontSize: 12, color: "#ef4444", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", marginBottom: 16 }}>Taeglich neu recherchiert</div>
-            <h2 className="section-h" style={{ fontFamily: "'Playfair Display', serif", fontSize: 40, fontWeight: 900, color: TEXT }}>Last Minute Deals</h2>
-            <p style={{ color: GRAY, marginTop: 10, fontSize: 16 }}>Guenstige Unterkuenfte, taeglich neu recherchiert</p>
-          </div>
-
-          <TaeglicheListe typ="deals" />
-
-          <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 700, color: TEXT, margin: "48px 0 20px", textAlign: "center" }}>Unsere Empfehlungen</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px,1fr))", gap: 20 }} className="hotel-grid">
-            {deals.map(function(h) { return <HotelCard key={h.id} hotel={h} />; })}
-          </div>
-          <div style={{ marginTop: 48, padding: 32, borderRadius: 20, background: ACCENT_LIGHT, border: "1px solid #e9d06a", textAlign: "center" }}>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, color: TEXT, marginBottom: 8 }}>Nichts Passendes dabei?</div>
-            <p style={{ color: GRAY, marginBottom: 20 }}>Unser KI-Berater findet das perfekte Hotel fuer dich!</p>
-            <button onClick={function() { setTab("ai"); }} className="btn-gold" style={{ borderRadius: 10, padding: "12px 28px" }}>KI-Berater fragen</button>
           </div>
         </div>
       )}

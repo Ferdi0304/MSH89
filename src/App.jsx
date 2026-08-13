@@ -202,6 +202,9 @@ function kuratierteTreffer(wunsch) {
 // Vertroestungen entfernen. Saetze wie "Lass mich suchen" sind wertlos,
 // weil die Suche in derselben Antwort bereits passiert sein muss.
 var VERTROESTUNG = [
+  /[^.!?\n]*\b(leider|bedauerlicherweise)\b[^.!?\n]*\b(gefunden|suchergebnis|verfuegbar|finden)\b[^.!?\n]*[.!?]/gi,
+  /[^.!?\n]*\bin den suchergebnissen\b[^.!?\n]*[.!?]/gi,
+  /[^.!?\n]*\bkonnten? kein[e]?[nsmr]?\b[^.!?\n]*\b(gefunden|finden)\b[^.!?\n]*[.!?]/gi,
   /[^.!?\n]*\b(lass mich|ich (werde|kann|wuerde|würde))\b[^.!?\n]*\b(such|raussuch|finden|heraussuch|zusammenstell|schau)[^.!?\n]*[.!?]/gi,
   /[^.!?\n]*\b(sag|schreib|gib)\b[^.!?\n]*\bbescheid\b[^.!?\n]*\b(link|schick|such)[^.!?\n]*[.!?]/gi,
   /[^.!?\n]*\bdann (schicke|sende|suche|finde) ich\b[^.!?\n]*[.!?]/gi,
@@ -257,7 +260,10 @@ function searchUrl(params) {
   if (params.checkin) u += "&checkin=" + params.checkin;
   if (params.checkout) u += "&checkout=" + params.checkout;
   if (params.erwachsene) u += "&group_adults=" + params.erwachsene;
-  if (params.maxPreis) u += "&nflt=price%3DEUR-min-" + params.maxPreis + "-1";
+  // Preisfilter: Bookings Format ist price=EUR-<von>-<bis>-1.
+  // Frueher stand hier "min-<preis>", das filterte auf Hotels
+  // AB diesem Preis - also genau falsch herum.
+  if (params.maxPreis) u += "&nflt=" + encodeURIComponent("price=EUR-0-" + params.maxPreis + "-1");
   u += "&selected_currency=EUR&lang=de";
   return track(u);
 }
@@ -380,6 +386,10 @@ function AIChat() {
         "1. Beruecksichtige das GANZE Gespraech. Einmal genannte Angaben bleiben gueltig.\n" +
         "2. Ist kein Ort genannt, aber eine Richtung erkennbar (Strand, Berge, Party, Staedtetrip), " +
         "waehle selbst einen konkreten passenden Ort und setze ihn in 'ort'.\n" +
+        "2b. WICHTIG - Ausschluesse beachten: Sagt der Gast 'ausserhalb von X', 'woanders', " +
+        "'was anderes' oder 'nicht X', dann waehle einen ANDEREN Ort in derselben Region. " +
+        "Beispiel: nach Mykonos gefragt, dann 'ausserhalb' -> waehle Kreta, Rhodos, Korfu oder Naxos. " +
+        "Setze den zuvor genannten Ort NIEMALS erneut ein.\n" +
         "3. Nur wenn wirklich gar nichts erkennbar ist: ort=null, dazu eine kurze 'frage' " +
         "und 2-3 konkrete 'vorschlaege'.\n" +
         "4. Preiswoerter uebersetzen: 'moeglichst billig'=60, 'guenstig'=90, 'gehoben'=250. " +
@@ -458,7 +468,12 @@ function AIChat() {
         '{"text":"2 Saetze auf Deutsch ueber die gefundenen Haeuser","hotels":' +
         '[{"name":"Hotelname","url":"https://www.booking.com/hotel/xx/name.html"}]}\n\n' +
         "Im 'text' darfst du NUR Haeuser erwaehnen, die auch in 'hotels' stehen. " +
-        "Keine Preise nennen, die du nicht geprueft hast. Keine Rueckfragen.",
+        "Keine Preise nennen, die du nicht geprueft hast. Keine Rueckfragen.\n" +
+        "NIEMALS ueber die Suche selbst sprechen. Verboten sind Saetze wie " +
+        "'leider konnte nichts gefunden werden' oder 'in den Suchergebnissen war nichts'. " +
+        "Findest du in der ersten Suche nichts Passendes, suche mit anderen Begriffen weiter " +
+        "oder weiche auf einen benachbarten Ort aus. Der 'text' beschreibt immer nur " +
+        "die gefundenen Haeuser.",
         [{ role: "user", content: auftrag }],
         true
       );

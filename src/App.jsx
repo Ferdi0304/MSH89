@@ -309,10 +309,10 @@ function AIChat() {
   }, [msgs, loading, suggested, searchLink, external]);
 
   // Ein API-Aufruf mit klar begrenzter Aufgabe.
-  var frage = async function(system, messages, mitSuche) {
+  var frage = async function(system, messages, mitSuche, modell) {
     var body = {
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: mitSuche ? 1200 : 400,
+      model: modell || "claude-haiku-4-5-20251001",
+      max_tokens: mitSuche ? 1200 : 600,
       system: system,
       messages: messages
     };
@@ -380,22 +380,35 @@ function AIChat() {
         "Du liest ein Gespraech ueber eine Hotelsuche und gibst NUR JSON zurueck, keinen anderen Text.\n\n" +
         "Format:\n" +
         '{"ort":"Stadt oder null","land":"Land oder null","maxPreis":Zahl oder null,' +
-        '"personen":Zahl,"art":"Hotel|Hostel|Apartment|Resort","stichworte":["..."],' +
-        '"frage":"eine kurze Rueckfrage oder null","vorschlaege":["Ort1","Ort2"]}\n\n' +
+        '"personen":Zahl,"naechte":Zahl oder null,"art":"Hotel|Hostel|Apartment|Resort",' +
+        '"stichworte":["..."],"frage":"eine kurze Rueckfrage oder null","vorschlaege":["Ort1","Ort2"]}\n\n' +
         "REGELN:\n" +
-        "1. Beruecksichtige das GANZE Gespraech. Einmal genannte Angaben bleiben gueltig.\n" +
-        "2. Ist kein Ort genannt, aber eine Richtung erkennbar (Strand, Berge, Party, Staedtetrip), " +
-        "waehle selbst einen konkreten passenden Ort und setze ihn in 'ort'.\n" +
-        "2b. WICHTIG - Ausschluesse beachten: Sagt der Gast 'ausserhalb von X', 'woanders', " +
-        "'was anderes' oder 'nicht X', dann waehle einen ANDEREN Ort in derselben Region. " +
-        "Beispiel: nach Mykonos gefragt, dann 'ausserhalb' -> waehle Kreta, Rhodos, Korfu oder Naxos. " +
-        "Setze den zuvor genannten Ort NIEMALS erneut ein.\n" +
-        "3. Nur wenn wirklich gar nichts erkennbar ist: ort=null, dazu eine kurze 'frage' " +
-        "und 2-3 konkrete 'vorschlaege'.\n" +
-        "4. Preiswoerter uebersetzen: 'moeglichst billig'=60, 'guenstig'=90, 'gehoben'=250. " +
-        "Zahlen im Text haben Vorrang.\n" +
-        "5. personen: Standard 2, wenn nichts gesagt wurde.\n" +
-        "6. Antworte ausschliesslich mit dem JSON-Objekt.",
+        "1. Beruecksichtige das GANZE Gespraech. Einmal genannte Angaben bleiben gueltig. " +
+        "Eine Folgefrage aendert nur das, was sie ausdruecklich nennt - alles andere bleibt.\n" +
+        "2. Ist kein Ort genannt, aber eine Richtung erkennbar, waehle selbst einen konkreten " +
+        "passenden Ort und setze ihn in 'ort'. Das gilt auch fuer indirekte Hinweise:\n" +
+        "   - Reisezeit: 'im Oktober noch baden' -> Kanaren, Zypern, Malta\n" +
+        "   - Anlass: 'Hochzeitstag romantisch Italien' -> Verona, Amalfikueste, Florenz\n" +
+        "   - Stimmung: 'was Cooles', 'mal wieder weg' -> waehle eine beliebte Stadt\n" +
+        "3. Ausschluesse beachten: Bei 'ausserhalb von X', 'woanders', 'nicht X' waehle einen " +
+        "ANDEREN Ort in derselben Region. Beispiel: nach Mykonos gefragt, dann 'ausserhalb' -> " +
+        "Kreta, Rhodos, Korfu oder Naxos. Den zuvor genannten Ort NIEMALS erneut einsetzen.\n" +
+        "4. Nur wenn wirklich gar nichts erkennbar ist: ort=null, dazu eine kurze 'frage' " +
+        "und 2-3 konkrete 'vorschlaege'. Das soll die Ausnahme sein.\n" +
+        "5. PREIS - maxPreis ist immer PRO NACHT:\n" +
+        "   - 'bis 90 Euro' -> maxPreis 90\n" +
+        "   - Gesamtbudget umrechnen: '400 Euro fuer 3 Tage' -> naechte 3, maxPreis 133\n" +
+        "   - '600 Euro Woche' -> naechte 7, maxPreis 85\n" +
+        "   - Preiswoerter: 'moeglichst billig'=60, 'guenstig'=90, 'gehoben'=250\n" +
+        "   - Konkrete Zahlen haben immer Vorrang vor Preiswoertern.\n" +
+        "6. personen: Standard 2. 'meine Eltern'=2, 'Familie'=4, 'mit Freundin'=2.\n" +
+        "7. stichworte: Alle Anforderungen aufnehmen, die keine Stadt und kein Preis sind. " +
+        "Zum Beispiel barrierefrei, ruhig, Pool, Strandnaehe, Fruehstueck, Parkplatz, " +
+        "Haustiere, Familienzimmer, Klimaanlage, WLAN, zentral. " +
+        "'keine Treppen' -> 'barrierefrei, Aufzug'. 'naeher am Strand' -> 'direkt am Strand'.\n" +
+        "8. art: 'Hostel' bei Backpacker- oder Gruppenanfragen, 'Apartment' bei Selbstversorgung " +
+        "oder langem Aufenthalt, 'Resort' bei All-Inclusive, sonst 'Hotel'.\n" +
+        "9. Antworte ausschliesslich mit dem JSON-Objekt.",
         verlauf,
         false
       );
@@ -406,6 +419,7 @@ function AIChat() {
         land: w.land || "",
         maxPreis: typeof w.maxPreis === "number" ? w.maxPreis : null,
         personen: typeof w.personen === "number" ? w.personen : 2,
+        naechte: typeof w.naechte === "number" ? w.naechte : null,
         art: w.art || "Hotel",
         stichworte: Array.isArray(w.stichworte) ? w.stichworte : []
       };
@@ -424,11 +438,24 @@ function AIChat() {
       var eigene = kuratierteTreffer(wunsch);
       setSuggested(eigene);
 
+      // Hat der Gast eine Dauer genannt, gleich einen Zeitraum vorbelegen -
+      // dann zeigt Booking passende Preise statt einer offenen Suche.
+      var zr = {};
+      if (wunsch.naechte && wunsch.naechte > 0 && wunsch.naechte < 30) {
+        var tag = 86400000;
+        var an = new Date(Date.now() + 14 * tag);
+        var ab = new Date(Date.now() + (14 + wunsch.naechte) * tag);
+        zr.checkin = an.toISOString().slice(0, 10);
+        zr.checkout = ab.toISOString().slice(0, 10);
+      }
+
       setSearchLink({
         url: searchUrl({
           ort: wunsch.ort,
           maxPreis: wunsch.maxPreis || undefined,
-          erwachsene: wunsch.personen
+          erwachsene: wunsch.personen,
+          checkin: zr.checkin,
+          checkout: zr.checkout
         }),
         ort: wunsch.ort
       });
@@ -436,10 +463,30 @@ function AIChat() {
       // ===== SCHRITT 3: Suchen, nur wenn noetig =====
       var brauchtSuche = eigene.length < 2;
       if (!brauchtSuche) {
-        var s = eigene.length === 1 ? "Ein Haus" : eigene.length + " Haeuser";
+        // Auch hier ueber Schritt 4 formulieren, damit die Antwort
+        // gleich klingt, egal woher die Haeuser kommen.
+        var eigenText = "";
+        try {
+          var f0 = await frage(
+            "Du bist Hotel-Concierge auf MySpecialHotel.com. Nur Fliesstext, kein Markdown.\n" +
+            "Empfiehl dem Gast die unten genannten Haeuser und erklaere je in einem Satz, " +
+            "warum sie zu seinem Wunsch passen. Nicht aufzaehlen, sondern empfehlen.\n" +
+            "Erfinde nichts dazu, keine Preise, keine Bewertungen.\n" +
+            "Zwei bis drei Saetze, warm und konkret. Hoechstens EINE kurze Rueckfrage.\n" +
+            "Die Buttons erscheinen automatisch - erwaehne sie nicht.\n\n" +
+            "HAEUSER:\n" + eigene.map(function(h) {
+              return "- " + h.name + " (" + h.city + ", " + h.country + "): " + h.tags.join(", ");
+            }).join("\n"),
+            verlauf.concat([{ role: "user", content: "Schreibe jetzt die Antwort auf meine letzte Nachricht." }]),
+            false,
+            "claude-sonnet-4-6"
+          );
+          eigenText = stripMarkers((f0.text || "").trim());
+        } catch (e) { eigenText = ""; }
+
         setMsgs(function(p) { return p.concat([{
           role: "assistant",
-          text: s + " in " + wunsch.ort + " passen zu deinem Wunsch."
+          text: eigenText || (eigene.length + " Haeuser in " + wunsch.ort + " passen zu deinem Wunsch.")
         }]); });
         setLoading(false);
         return;
@@ -454,26 +501,31 @@ function AIChat() {
         "Finde " + (3 - eigene.length) + " Unterkuenfte in " + wunsch.ort +
         (wunsch.land ? " (" + wunsch.land + ")" : "") +
         " fuer " + wunsch.personen + " Personen, Art: " + wunsch.art +
-        (wunsch.maxPreis ? ", maximal " + wunsch.maxPreis + " EUR pro Nacht" : "") +
-        (wunsch.stichworte.length ? ", Merkmale: " + wunsch.stichworte.join(", ") : "") + ".";
+        (wunsch.maxPreis ? ", hoechstens " + wunsch.maxPreis + " EUR pro Nacht" : "") + ".\n" +
+        (wunsch.stichworte.length
+          ? "PFLICHT-ANFORDERUNGEN: " + wunsch.stichworte.join(", ") +
+            ". Nimm diese Begriffe mit in die Suchanfrage auf. " +
+            "Ein Haus, das sie nicht erfuellt, gehoert nicht in die Antwort.\n"
+          : "");
 
       var suchen = await frage(
         "Du bist Hotel-Rechercheur. Deine einzige Aufgabe: echte Booking.com-Seiten finden.\n\n" +
         "ABLAUF:\n" +
-        "1. Nutze web_search mit dem Muster: site:booking.com \"Stadt\" Hotel\n" +
-        "2. Nimm aus den Treffern nur URLs der Form https://www.booking.com/hotel/XX/name.html\n" +
-        "3. Erfinde NIEMALS eine URL. Nur was in den Suchergebnissen stand.\n\n" +
+        "1. Nutze web_search. Muster: site:booking.com \"Stadt\" <Anforderung> Hotel\n" +
+        "   Bei Anforderungen diese in die Suche aufnehmen, z.B. " +
+        "site:booking.com \"Kreta\" Hotel direkt am Strand\n" +
+        "2. Bringt die erste Suche nichts Passendes, suche ERNEUT mit anderen Begriffen: " +
+        "englische statt deutsche Woerter, Stadtteil statt Stadt, oder ohne die engste " +
+        "Anforderung. Gib nicht nach einer Suche auf.\n" +
+        "3. Nimm aus den Treffern nur URLs der Form https://www.booking.com/hotel/XX/name.html\n" +
+        "4. Erfinde NIEMALS eine URL. Nur was in den Suchergebnissen stand.\n\n" +
         (bekannteZeilen.length ? "Bereits bekannt (URL direkt nutzbar, nicht erneut suchen):\n" + bekannteZeilen.join("\n") + "\n\n" : "") +
         "Antworte NUR mit diesem JSON, ohne weiteren Text:\n" +
-        '{"text":"2 Saetze auf Deutsch ueber die gefundenen Haeuser","hotels":' +
-        '[{"name":"Hotelname","url":"https://www.booking.com/hotel/xx/name.html"}]}\n\n' +
-        "Im 'text' darfst du NUR Haeuser erwaehnen, die auch in 'hotels' stehen. " +
-        "Keine Preise nennen, die du nicht geprueft hast. Keine Rueckfragen.\n" +
-        "NIEMALS ueber die Suche selbst sprechen. Verboten sind Saetze wie " +
-        "'leider konnte nichts gefunden werden' oder 'in den Suchergebnissen war nichts'. " +
-        "Findest du in der ersten Suche nichts Passendes, suche mit anderen Begriffen weiter " +
-        "oder weiche auf einen benachbarten Ort aus. Der 'text' beschreibt immer nur " +
-        "die gefundenen Haeuser.",
+        '{"hotels":[{"name":"Hotelname","url":"https://www.booking.com/hotel/xx/name.html",' +
+        '"fakten":"Was in den Suchergebnissen ueber dieses Haus stand: Lage, Ausstattung, ' +
+        'Besonderheiten. Stichpunkte reichen. NUR was du wirklich gelesen hast."}]}\n\n' +
+        "Schreibe KEINEN Fliesstext und KEINE Empfehlung - nur die Fakten je Haus. " +
+        "Erfinde keine Preise und keine Bewertungen.",
         [{ role: "user", content: auftrag }],
         true
       );
@@ -504,19 +556,58 @@ function AIChat() {
         seen[u] = 1;
         var name = (h.name || "").trim() || nameAusUrl(u);
         rememberHotel(name, wunsch.ort, u);
-        liste.push({ name: name, ort: wunsch.ort, url: track(u) });
+        liste.push({ name: name, ort: wunsch.ort, url: track(u), fakten: (h.fakten || "").trim() });
       });
       liste = liste.slice(0, 3 - eigene.length);
 
       setExternal(liste);
 
-      var antwort = (erg.text || "").trim();
+      // ===== SCHRITT 4: Antwort formulieren =====
+      // Eigener Aufruf, weil ein Modell, das gerade recherchiert hat,
+      // Aufzaehlungen statt Empfehlungen schreibt. Hier zaehlt nur Sprache,
+      // deshalb das staerkere Modell.
+      var haeuser = eigene.map(function(h) {
+        return "- " + h.name + " (" + h.city + "): " + h.tags.join(", ");
+      }).concat(liste.map(function(h) {
+        return "- " + h.name + (h.fakten ? ": " + h.fakten : "");
+      }));
+
+      var antwort = "";
+      if (haeuser.length) {
+        try {
+          var formulieren = await frage(
+            "Du bist Hotel-Concierge auf MySpecialHotel.com und schreibst die Antwort " +
+            "an einen Gast. Nur Fliesstext, kein Markdown, keine Aufzaehlung mit Strichen.\n\n" +
+            "SO SCHREIBST DU:\n" +
+            "Beziehe dich auf das, was der Gast wollte, und erklaere zu jedem Haus in " +
+            "einem Satz, warum es dazu passt. Nicht aufzaehlen, sondern empfehlen - " +
+            "ein Gefaehrte, der etwas vorschlaegt, kein Suchergebnis.\n" +
+            "Nutze nur die unten genannten Fakten. Erfinde nichts dazu, " +
+            "besonders keine Preise und keine Bewertungen.\n" +
+            "Zwei bis vier Saetze, warm und konkret. Am Ende hoechstens EINE kurze " +
+            "Rueckfrage, die weiterhilft - oder gar keine.\n" +
+            "Erwaehne nicht, dass du gesucht hast, und sprich nie ueber die Suche selbst.\n" +
+            "Die Buttons zum Buchen erscheinen automatisch unter deinem Text - " +
+            "erwaehne sie nicht und schreibe keine Links.\n\n" +
+            "GEFUNDENE HAEUSER:\n" + haeuser.join("\n"),
+            verlauf.concat([{
+              role: "user",
+              content: "Schreibe jetzt die Antwort auf meine letzte Nachricht."
+            }]),
+            false,
+            "claude-sonnet-4-6"
+          );
+          antwort = stripMarkers((formulieren.text || "").trim());
+        } catch (e) {
+          antwort = "";
+        }
+      }
+
       if (!antwort) {
-        antwort = liste.length
+        antwort = haeuser.length
           ? "Hier sind passende Unterkuenfte in " + wunsch.ort + "."
           : "In " + wunsch.ort + " findest du die aktuelle Auswahl direkt bei Booking.";
       }
-      antwort = stripMarkers(antwort);
 
       setMsgs(function(p) { return p.concat([{ role: "assistant", text: antwort }]); });
 

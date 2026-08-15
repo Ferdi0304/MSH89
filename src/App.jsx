@@ -379,7 +379,8 @@ function AIChat() {
       var verstehen = await frage(
         "Du liest ein Gespraech ueber eine Hotelsuche und gibst NUR JSON zurueck, keinen anderen Text.\n\n" +
         "Format:\n" +
-        '{"ort":"Stadt oder null","land":"Land oder null","maxPreis":Zahl oder null,' +
+        '{"ort":"Stadt oder null","orte":["Stadt1","Stadt2","Stadt3"],' +
+        '"land":"Land oder null","maxPreis":Zahl oder null,' +
         '"personen":Zahl,"naechte":Zahl oder null,"art":"Hotel|Hostel|Apartment|Resort",' +
         '"stichworte":["..."],"frage":"eine kurze Rueckfrage oder null","vorschlaege":["Ort1","Ort2"]}\n\n' +
         "REGELN:\n" +
@@ -387,6 +388,14 @@ function AIChat() {
         "Eine Folgefrage aendert nur das, was sie ausdruecklich nennt - alles andere bleibt.\n" +
         "2. Ist kein Ort genannt, aber eine Richtung erkennbar, waehle selbst einen konkreten " +
         "passenden Ort und setze ihn in 'ort'. Das gilt auch fuer indirekte Hinweise:\n" +
+        "2a. REGIONEN AUFTEILEN: Nennt der Gast eine Region, ein Land, ein Meer oder eine " +
+        "Kueste statt einer Stadt, waehle DREI verschiedene passende Orte darin und schreibe " +
+        "sie in 'orte'. In 'ort' kommt der erste davon.\n" +
+        "   'Mittelmeer' -> orte: Barcelona, Nizza, Valencia\n" +
+        "   'Griechenland' -> orte: Kreta, Rhodos, Korfu\n" +
+        "   'Alpen' -> orte: Zermatt, Innsbruck, Garmisch\n" +
+        "   'ans Meer' -> orte: drei Kuestenorte\n" +
+        "   Bei einer konkreten Stadt bleibt 'orte' leer.\n" +
         "   - Reisezeit: 'im Oktober noch baden' -> Kanaren, Zypern, Malta\n" +
         "   - Anlass: 'Hochzeitstag romantisch Italien' -> Verona, Amalfikueste, Florenz\n" +
         "   - Stimmung: 'was Cooles', 'mal wieder weg' -> waehle eine beliebte Stadt\n" +
@@ -416,6 +425,9 @@ function AIChat() {
       var w = leseJson(verstehen.text) || {};
       var wunsch = {
         ort: w.ort || "",
+        orte: Array.isArray(w.orte) ? w.orte.filter(function(o) {
+          return typeof o === "string" && o.trim().length > 1;
+        }).slice(0, 3) : [],
         land: w.land || "",
         maxPreis: typeof w.maxPreis === "number" ? w.maxPreis : null,
         personen: typeof w.personen === "number" ? w.personen : 2,
@@ -497,9 +509,14 @@ function AIChat() {
         return h.name + " | " + h.url;
       }).slice(0, 40);
 
+      // Bei einer Region je ein Haus pro Ort statt drei in derselben Stadt.
+      var mehrereOrte = wunsch.orte.length > 1;
       var auftrag =
-        "Finde " + (3 - eigene.length) + " Unterkuenfte in " + wunsch.ort +
-        (wunsch.land ? " (" + wunsch.land + ")" : "") +
+        (mehrereOrte
+          ? "Finde je eine Unterkunft in diesen Orten: " + wunsch.orte.join(", ") +
+            ". Pro Ort genau ein Haus, nicht mehrere in derselben Stadt."
+          : "Finde " + (3 - eigene.length) + " Unterkuenfte in " + wunsch.ort +
+            (wunsch.land ? " (" + wunsch.land + ")" : "")) +
         " fuer " + wunsch.personen + " Personen, Art: " + wunsch.art +
         (wunsch.maxPreis ? ", hoechstens " + wunsch.maxPreis + " EUR pro Nacht" : "") + ".\n" +
         (wunsch.stichworte.length
@@ -521,7 +538,8 @@ function AIChat() {
         "4. Erfinde NIEMALS eine URL. Nur was in den Suchergebnissen stand.\n\n" +
         (bekannteZeilen.length ? "Bereits bekannt (URL direkt nutzbar, nicht erneut suchen):\n" + bekannteZeilen.join("\n") + "\n\n" : "") +
         "Antworte NUR mit diesem JSON, ohne weiteren Text:\n" +
-        '{"hotels":[{"name":"Hotelname","url":"https://www.booking.com/hotel/xx/name.html",' +
+        '{"hotels":[{"name":"Hotelname","stadt":"Ort des Hauses",' +
+        '"url":"https://www.booking.com/hotel/xx/name.html",' +
         '"fakten":"Was in den Suchergebnissen ueber dieses Haus stand: Lage, Ausstattung, ' +
         'Besonderheiten. Stichpunkte reichen. NUR was du wirklich gelesen hast."}]}\n\n' +
         "Schreibe KEINEN Fliesstext und KEINE Empfehlung - nur die Fakten je Haus. " +
@@ -555,10 +573,11 @@ function AIChat() {
         if (seen[u]) return;
         seen[u] = 1;
         var name = (h.name || "").trim() || nameAusUrl(u);
-        rememberHotel(name, wunsch.ort, u);
-        liste.push({ name: name, ort: wunsch.ort, url: track(u), fakten: (h.fakten || "").trim() });
+        var stadt = (h.stadt || "").trim() || wunsch.ort;
+        rememberHotel(name, stadt, u);
+        liste.push({ name: name, ort: stadt, url: track(u), fakten: (h.fakten || "").trim() });
       });
-      liste = liste.slice(0, 3 - eigene.length);
+      liste = liste.slice(0, mehrereOrte ? 3 : 3 - eigene.length);
 
       setExternal(liste);
 
@@ -569,7 +588,7 @@ function AIChat() {
       var haeuser = eigene.map(function(h) {
         return "- " + h.name + " (" + h.city + "): " + h.tags.join(", ");
       }).concat(liste.map(function(h) {
-        return "- " + h.name + (h.fakten ? ": " + h.fakten : "");
+        return "- " + h.name + (h.ort ? " (" + h.ort + ")" : "") + (h.fakten ? ": " + h.fakten : "");
       }));
 
       var antwort = "";

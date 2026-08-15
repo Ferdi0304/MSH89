@@ -235,6 +235,27 @@ function stripMarkers(t) {
     .trim();
 }
 
+// Gemeinsamer Cache ueber /api/deals: Was ein Besucher gesucht hat,
+// steht danach allen zur Verfuegung. Spart die teuren Websuchen.
+async function cacheLesen(stadt) {
+  try {
+    var r = await fetch("/api/deals?stadt=" + encodeURIComponent(stadt));
+    if (!r.ok) return [];
+    var d = await r.json();
+    return Array.isArray(d.hotels) ? d.hotels : [];
+  } catch (e) { return []; }
+}
+
+function cacheSchreiben(stadt, hotels) {
+  try {
+    fetch("/api/deals", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stadt: stadt, hotels: hotels })
+    }).catch(function() {});
+  } catch (e) { /* Cache ist Zusatz, kein Muss */ }
+}
+
 // Baut aus einer Booking-URL einen lesbaren Hotelnamen.
 // Wird gebraucht, wenn die Suche zwar eine URL liefert, aber
 // keinen brauchbaren Namen dazu.
@@ -324,7 +345,12 @@ function AIChat() {
       system: system,
       messages: messages
     };
-    if (mitSuche) body.tools = [{ type: "web_search_20250305", name: "web_search", max_uses: 2 }];
+    if (mitSuche) body.tools = [{
+      type: "web_search_20250305",
+      name: "web_search",
+      max_uses: 2,
+      allowed_domains: ["booking.com"]
+    }];
 
     var res = await fetch("/api/chat", {
       method: "POST",
@@ -475,7 +501,33 @@ function AIChat() {
       });
 
       // ===== SCHRITT 3: Suchen, nur wenn noetig =====
-      var brauchtSuche = eigene.length < 2;
+      // ===== SCHRITT 2b: Gemeinsamen Cache fragen =====
+      // Was ein anderer Besucher zu dieser Stadt schon gefunden hat,
+      // brauchen wir nicht erneut zu suchen. Das ist der groesste Hebel
+      // bei den Kosten, weil jede Websuche teuer ist.
+      var ausCache = [];
+      var suchOrte = wunsch.orte.length ? wunsch.orte : [wunsch.ort];
+      try {
+        var treffer = await Promise.all(suchOrte.map(cacheLesen));
+        treffer.forEach(function(liste, i) {
+          // Bei mehreren Orten nur ein Haus je Ort, sonst bis zu drei
+          var n = suchOrte.length > 1 ? 1 : 3;
+          liste.slice(0, n).forEach(function(h) {
+            if (ausCache.some(function(x) { return x.url === h.url; })) return;
+            ausCache.push({
+              name: h.name,
+              ort: h.stadt || suchOrte[i],
+              url: track(h.url),
+              fakten: h.fakten || ""
+            });
+          });
+        });
+      } catch (e) { ausCache = []; }
+
+      var brauchtSuche = (eigene.length + ausCache.length) < 2;
+
+      if (ausCache.length > 0) setExternal(ausCache.slice(0, 3 - eigene.length));
+
       if (!brauchtSuche) {
         // Auch hier ueber Schritt 4 formulieren, damit die Antwort
         // gleich klingt, egal woher die Haeuser kommen.
@@ -490,7 +542,9 @@ function AIChat() {
             "Die Buttons erscheinen automatisch - erwaehne sie nicht.\n\n" +
             "HAEUSER:\n" + eigene.map(function(h) {
               return "- " + h.name + " (" + h.city + ", " + h.country + "): " + h.tags.join(", ");
-            }).join("\n"),
+            }).concat(ausCache.map(function(h) {
+              return "- " + h.name + (h.ort ? " (" + h.ort + ")" : "") + (h.fakten ? ": " + h.fakten : "");
+            })).join("\n"),
             kurzerVerlauf(verlauf).concat([{ role: "user", content: "Schreibe jetzt die Antwort auf meine letzte Nachricht." }]),
             false,
             "claude-sonnet-4-6"
@@ -500,7 +554,7 @@ function AIChat() {
 
         setMsgs(function(p) { return p.concat([{
           role: "assistant",
-          text: eigenText || (eigene.length + " Haeuser in " + wunsch.ort + " passen zu deinem Wunsch.")
+          text: eigenText || ((eigene.length + ausCache.length) + " Haeuser in " + wunsch.ort + " passen zu deinem Wunsch.")
         }]); });
         setLoading(false);
         return;
@@ -522,6 +576,15 @@ function AIChat() {
 
       // Bei einer Region je ein Haus pro Ort statt drei in derselben Stadt.
       var mehrereOrte = wunsch.orte.length > 1;
+      // Suchbegriffe im Code bauen: praeziser als vom Modell formuliert,
+      // dadurch haeufiger Treffer beim ersten Versuch.
+      var merkmale = wunsch.stichworte.slice(0, 2).join(" ");
+      var artWort = wunsch.art === "Hostel" ? "Hostel"
+        : wunsch.art === "Apartment" ? "Apartment"
+        : "Hotel";
+      var suchbegriffe = (wunsch.orte.length ? wunsch.orte : [wunsch.ort])
+        .map(function(o) { return o + " " + artWort + (merkmale ? " " + merkmale : ""); });
+
       var auftrag =
         (mehrereOrte
           ? "Finde je eine Unterkunft in diesen Orten: " + wunsch.orte.join(", ") +
@@ -538,9 +601,10 @@ function AIChat() {
 
       var suchen = await frage(
         "Finde echte Booking.com-Hotelseiten per web_search.\n" +
-        "Suchmuster: site:booking.com \"Ort\" <Anforderung> Hotel\n" +
-        "Ohne Treffer: erneut mit anderen Begriffen suchen (englisch, Stadtteil, " +
-        "weniger Anforderungen). Nicht nach einer Suche aufgeben.\n" +
+        "Die Suche ist bereits auf booking.com beschraenkt - kein site: noetig.\n" +
+        "Suche mit genau diesen Begriffen: " + suchbegriffe.join(" / ") + "\n" +
+        "Nutze moeglichst NUR EINE Suche. Eine zweite nur, wenn die erste " +
+        "gar keine Hotelseiten geliefert hat - dann mit englischen Begriffen.\n" +
         "Nur URLs der Form https://www.booking.com/hotel/XX/name.html uebernehmen. " +
         "Niemals eine URL erfinden.\n\n" +
         (bekannteZeilen.length ? "Bereits bekannt (URL direkt nutzbar, nicht erneut suchen):\n" + bekannteZeilen.join("\n") + "\n\n" : "") +
@@ -585,7 +649,23 @@ function AIChat() {
       });
       liste = liste.slice(0, mehrereOrte ? 3 : 3 - eigene.length);
 
-      setExternal(liste);
+      setExternal(ausCache.concat(liste).slice(0, 3));
+
+      // Fund fuer alle anderen Besucher hinterlegen
+      var proOrt = {};
+      liste.forEach(function(h) {
+        var o = h.ort || wunsch.ort;
+        if (!proOrt[o]) proOrt[o] = [];
+        proOrt[o].push({
+          name: h.name,
+          stadt: o,
+          url: h.url.indexOf("url=") !== -1
+            ? decodeURIComponent(h.url.split("url=")[1])
+            : h.url,
+          fakten: h.fakten || ""
+        });
+      });
+      Object.keys(proOrt).forEach(function(o) { cacheSchreiben(o, proOrt[o]); });
 
       // ===== SCHRITT 4: Antwort formulieren =====
       // Eigener Aufruf, weil ein Modell, das gerade recherchiert hat,
@@ -593,7 +673,9 @@ function AIChat() {
       // deshalb das staerkere Modell.
       var haeuser = eigene.map(function(h) {
         return "- " + h.name + " (" + h.city + "): " + h.tags.join(", ");
-      }).concat(liste.map(function(h) {
+      }).concat(ausCache.map(function(h) {
+        return "- " + h.name + (h.ort ? " (" + h.ort + ")" : "") + (h.fakten ? ": " + h.fakten : "");
+      })).concat(liste.map(function(h) {
         return "- " + h.name + (h.ort ? " (" + h.ort + ")" : "") + (h.fakten ? ": " + h.fakten : "");
       }));
 
@@ -711,92 +793,6 @@ function AIChat() {
           {hints.map(function(s) { return <button key={s} onClick={function() { setInput(s); }} style={{ background: ACCENT_LIGHT, border: "1px solid #e9d06a", borderRadius: 16, padding: "4px 12px", color: ACCENT, fontSize: 12, cursor: "pointer", fontFamily: "Inter, sans-serif", fontWeight: 500 }}>{s}</button>; })}
         </div>
       </div>
-    </div>
-  );
-}
-
-// Zeigt die taeglich per Websuche gefundenen Unterkuenfte.
-// Die Daten kommen aus /api/deals und liegen dort 24 Stunden im
-// Zwischenspeicher - der Aufruf hier kostet also nichts extra.
-function TaeglicheListe({ typ }) {
-  var [daten, setDaten] = useState(null);
-
-  useEffect(function() {
-    var abgebrochen = false;
-    fetch("/api/deals?typ=" + typ)
-      .then(function(r) { return r.json(); })
-      .then(function(d) { if (!abgebrochen) setDaten(d); })
-      .catch(function() { if (!abgebrochen) setDaten({ hotels: [] }); });
-    return function() { abgebrochen = true; };
-  }, [typ]);
-
-  if (daten === null) {
-    return (
-      <div style={{ textAlign: "center", padding: "44px 0", color: GRAY, fontSize: 14 }}>
-        <div style={{ display: "inline-flex", gap: 5, marginBottom: 12 }}>
-          {[0,1,2].map(function(i) {
-            return <div key={i} style={{ width: 7, height: 7, borderRadius: "50%", background: ACCENT, animation: "bounce 1.2s " + (i * 0.2) + "s infinite" }} />;
-          })}
-        </div>
-        <div>Aktuelle Auswahl wird geladen...</div>
-      </div>
-    );
-  }
-
-  var hotels = Array.isArray(daten.hotels) ? daten.hotels : [];
-
-  if (hotels.length === 0) {
-    return (
-      <div style={{ textAlign: "center", padding: "36px 24px", background: "#f9fafb", border: "1px solid " + BORDER, borderRadius: 16, color: GRAY, fontSize: 14 }}>
-        Die aktuelle Auswahl ist gerade nicht verfuegbar. Schau spaeter nochmal vorbei oder nutze den KI-Berater.
-      </div>
-    );
-  }
-
-  // Zeitraum an den Link haengen: so zeigt Booking echte Preise
-  // fuer die kommenden Tage statt allgemeiner Listenpreise.
-  var z = daten.zeitraum || {};
-  var mitDatum = function(url) {
-    var u = url;
-    if (z.checkin && z.checkout) {
-      u += (u.indexOf("?") === -1 ? "?" : "&")
-        + "checkin=" + z.checkin + "&checkout=" + z.checkout
-        + "&selected_currency=EUR&lang=de";
-    }
-    return track(u);
-  };
-
-  return (
-    <div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px,1fr))", gap: 20 }} className="hotel-grid">
-        {hotels.map(function(h, i) {
-          return (
-            <a key={i} href={mitDatum(h.url)} target="_blank" rel="noopener noreferrer"
-               className="card"
-               style={{ display: "block", background: "#fff", border: "1px solid " + BORDER, borderRadius: 16, overflow: "hidden", textDecoration: "none", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-              <div style={{ position: "relative", height: 150, overflow: "hidden", background: "linear-gradient(135deg,#e8dcc0,#c9a961)" }}>
-                {h.bild && <img src={h.bild} alt={h.stadt} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
-                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.55), transparent 55%)" }} />
-                <div style={{ position: "absolute", bottom: 10, left: 12, color: "#fff", fontSize: 13, fontWeight: 600, textShadow: "0 1px 3px rgba(0,0,0,0.5)" }}>
-                  {h.stadt}{h.land ? ", " + h.land : ""}
-                </div>
-              </div>
-              <div style={{ padding: 16 }}>
-                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 17, fontWeight: 700, color: TEXT, marginBottom: 6, lineHeight: 1.3 }}>{h.name}</div>
-                {h.beschreibung && <div style={{ fontSize: 13, color: GRAY, lineHeight: 1.55, marginBottom: 14 }}>{h.beschreibung}</div>}
-                <span className="btn-gold" style={{ display: "inline-block", padding: "9px 18px", fontSize: 12 }}>Preis ansehen →</span>
-              </div>
-            </a>
-          );
-        })}
-      </div>
-
-      {z.checkin && (
-        <div style={{ textAlign: "center", marginTop: 18, fontSize: 12, color: GRAY, lineHeight: 1.6 }}>
-          Preise werden fuer {z.checkin.split("-").reverse().join(".")} bis {z.checkout.split("-").reverse().join(".")} angezeigt.<br />
-          Aktuelle Verfuegbarkeit und Preis siehst du bei Booking.com.
-        </div>
-      )}
     </div>
   );
 }
@@ -952,9 +948,6 @@ export default function App() {
               </div>;
             })}
           </div>
-          <TaeglicheListe typ="nomad" />
-
-          <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 700, color: TEXT, margin: "48px 0 20px", textAlign: "center" }}>Unsere Empfehlungen</h3>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px,1fr))", gap: 20 }} className="hotel-grid">
             {nomads.map(function(h) { return <HotelCard key={h.id} hotel={h} />; })}
           </div>

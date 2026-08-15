@@ -309,14 +309,22 @@ function AIChat() {
   }, [msgs, loading, suggested, searchLink, external]);
 
   // Ein API-Aufruf mit klar begrenzter Aufgabe.
+  // Fuer Schritt 4: nur die letzten Nachrichten, sonst zahlt man
+  // bei Sonnet den ganzen Verlauf mit.
+  var kurzerVerlauf = function(v) {
+    var k = v.slice(-4);
+    while (k.length && k[0].role !== "user") k.shift();
+    return k.length ? k : v.slice(-1);
+  };
+
   var frage = async function(system, messages, mitSuche, modell) {
     var body = {
       model: modell || "claude-haiku-4-5-20251001",
-      max_tokens: mitSuche ? 1200 : 600,
+      max_tokens: mitSuche ? 1200 : (modell ? 300 : 600),
       system: system,
       messages: messages
     };
-    if (mitSuche) body.tools = [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }];
+    if (mitSuche) body.tools = [{ type: "web_search_20250305", name: "web_search", max_uses: 2 }];
 
     var res = await fetch("/api/chat", {
       method: "POST",
@@ -489,7 +497,7 @@ function AIChat() {
             "HAEUSER:\n" + eigene.map(function(h) {
               return "- " + h.name + " (" + h.city + ", " + h.country + "): " + h.tags.join(", ");
             }).join("\n"),
-            verlauf.concat([{ role: "user", content: "Schreibe jetzt die Antwort auf meine letzte Nachricht." }]),
+            kurzerVerlauf(verlauf).concat([{ role: "user", content: "Schreibe jetzt die Antwort auf meine letzte Nachricht." }]),
             false,
             "claude-sonnet-4-6"
           );
@@ -507,7 +515,7 @@ function AIChat() {
       var bekannteZeilen = Object.keys(KNOWN_HOTELS).map(function(k) {
         var h = KNOWN_HOTELS[k];
         return h.name + " | " + h.url;
-      }).slice(0, 40);
+      }).slice(0, 60);
 
       // Bei einer Region je ein Haus pro Ort statt drei in derselben Stadt.
       var mehrereOrte = wunsch.orte.length > 1;
@@ -609,7 +617,7 @@ function AIChat() {
             "Die Buttons zum Buchen erscheinen automatisch unter deinem Text - " +
             "erwaehne sie nicht und schreibe keine Links.\n\n" +
             "GEFUNDENE HAEUSER:\n" + haeuser.join("\n"),
-            verlauf.concat([{
+            kurzerVerlauf(verlauf).concat([{
               role: "user",
               content: "Schreibe jetzt die Antwort auf meine letzte Nachricht."
             }]),

@@ -320,7 +320,7 @@ function AIChat() {
   var frage = async function(system, messages, mitSuche, modell) {
     var body = {
       model: modell || "claude-haiku-4-5-20251001",
-      max_tokens: mitSuche ? 1200 : (modell ? 300 : 600),
+      max_tokens: mitSuche ? 700 : (modell ? 300 : 500),
       system: system,
       messages: messages
     };
@@ -394,19 +394,13 @@ function AIChat() {
         "REGELN:\n" +
         "1. Beruecksichtige das GANZE Gespraech. Einmal genannte Angaben bleiben gueltig. " +
         "Eine Folgefrage aendert nur das, was sie ausdruecklich nennt - alles andere bleibt.\n" +
-        "2. Ist kein Ort genannt, aber eine Richtung erkennbar, waehle selbst einen konkreten " +
-        "passenden Ort und setze ihn in 'ort'. Das gilt auch fuer indirekte Hinweise:\n" +
-        "2a. REGIONEN AUFTEILEN: Nennt der Gast eine Region, ein Land, ein Meer oder eine " +
-        "Kueste statt einer Stadt, waehle DREI verschiedene passende Orte darin und schreibe " +
-        "sie in 'orte'. In 'ort' kommt der erste davon.\n" +
-        "   'Mittelmeer' -> orte: Barcelona, Nizza, Valencia\n" +
-        "   'Griechenland' -> orte: Kreta, Rhodos, Korfu\n" +
-        "   'Alpen' -> orte: Zermatt, Innsbruck, Garmisch\n" +
-        "   'ans Meer' -> orte: drei Kuestenorte\n" +
-        "   Bei einer konkreten Stadt bleibt 'orte' leer.\n" +
-        "   - Reisezeit: 'im Oktober noch baden' -> Kanaren, Zypern, Malta\n" +
-        "   - Anlass: 'Hochzeitstag romantisch Italien' -> Verona, Amalfikueste, Florenz\n" +
-        "   - Stimmung: 'was Cooles', 'mal wieder weg' -> waehle eine beliebte Stadt\n" +
+        "2. Kein Ort genannt, aber eine Richtung erkennbar? Waehle selbst einen konkreten Ort. " +
+        "Auch bei indirekten Hinweisen: 'im Oktober baden' -> Kanaren; " +
+        "'Hochzeitstag Italien' -> Verona; 'mal wieder weg' -> eine beliebte Stadt.\n" +
+        "2a. REGIONEN AUFTEILEN: Bei Region, Land, Meer oder Kueste statt Stadt waehle DREI " +
+        "verschiedene Orte darin und schreibe sie in 'orte', den ersten auch in 'ort'. " +
+        "'Mittelmeer' -> Barcelona, Nizza, Valencia. 'Griechenland' -> Kreta, Rhodos, Korfu. " +
+        "Bei konkreter Stadt bleibt 'orte' leer.\n" +
         "3. Ausschluesse beachten: Bei 'ausserhalb von X', 'woanders', 'nicht X' waehle einen " +
         "ANDEREN Ort in derselben Region. Beispiel: nach Mykonos gefragt, dann 'ausserhalb' -> " +
         "Kreta, Rhodos, Korfu oder Naxos. Den zuvor genannten Ort NIEMALS erneut einsetzen.\n" +
@@ -512,10 +506,19 @@ function AIChat() {
         return;
       }
 
+      // Nur Hotels aus den gesuchten Orten mitschicken. Alle 60 zu senden
+      // kostet bei jeder Anfrage Tokens, hilft aber nur bei passender Stadt.
+      var zielOrte = (wunsch.orte.length ? wunsch.orte : [wunsch.ort]).map(normal);
       var bekannteZeilen = Object.keys(KNOWN_HOTELS).map(function(k) {
-        var h = KNOWN_HOTELS[k];
+        return KNOWN_HOTELS[k];
+      }).filter(function(h) {
+        var s = normal(h.stadt || "");
+        return zielOrte.some(function(o) {
+          return o && s && (s.indexOf(o) !== -1 || o.indexOf(s) !== -1);
+        });
+      }).slice(0, 12).map(function(h) {
         return h.name + " | " + h.url;
-      }).slice(0, 60);
+      });
 
       // Bei einer Region je ein Haus pro Ort statt drei in derselben Stadt.
       var mehrereOrte = wunsch.orte.length > 1;
@@ -534,22 +537,17 @@ function AIChat() {
           : "");
 
       var suchen = await frage(
-        "Du bist Hotel-Rechercheur. Deine einzige Aufgabe: echte Booking.com-Seiten finden.\n\n" +
-        "ABLAUF:\n" +
-        "1. Nutze web_search. Muster: site:booking.com \"Stadt\" <Anforderung> Hotel\n" +
-        "   Bei Anforderungen diese in die Suche aufnehmen, z.B. " +
-        "site:booking.com \"Kreta\" Hotel direkt am Strand\n" +
-        "2. Bringt die erste Suche nichts Passendes, suche ERNEUT mit anderen Begriffen: " +
-        "englische statt deutsche Woerter, Stadtteil statt Stadt, oder ohne die engste " +
-        "Anforderung. Gib nicht nach einer Suche auf.\n" +
-        "3. Nimm aus den Treffern nur URLs der Form https://www.booking.com/hotel/XX/name.html\n" +
-        "4. Erfinde NIEMALS eine URL. Nur was in den Suchergebnissen stand.\n\n" +
+        "Finde echte Booking.com-Hotelseiten per web_search.\n" +
+        "Suchmuster: site:booking.com \"Ort\" <Anforderung> Hotel\n" +
+        "Ohne Treffer: erneut mit anderen Begriffen suchen (englisch, Stadtteil, " +
+        "weniger Anforderungen). Nicht nach einer Suche aufgeben.\n" +
+        "Nur URLs der Form https://www.booking.com/hotel/XX/name.html uebernehmen. " +
+        "Niemals eine URL erfinden.\n\n" +
         (bekannteZeilen.length ? "Bereits bekannt (URL direkt nutzbar, nicht erneut suchen):\n" + bekannteZeilen.join("\n") + "\n\n" : "") +
         "Antworte NUR mit diesem JSON, ohne weiteren Text:\n" +
         '{"hotels":[{"name":"Hotelname","stadt":"Ort des Hauses",' +
         '"url":"https://www.booking.com/hotel/xx/name.html",' +
-        '"fakten":"Was in den Suchergebnissen ueber dieses Haus stand: Lage, Ausstattung, ' +
-        'Besonderheiten. Stichpunkte reichen. NUR was du wirklich gelesen hast."}]}\n\n' +
+        '"fakten":"max 12 Woerter: Lage und 2-3 Merkmale, nur Gelesenes"}]}\n\n' +
         "Schreibe KEINEN Fliesstext und KEINE Empfehlung - nur die Fakten je Haus. " +
         "Erfinde keine Preise und keine Bewertungen.",
         [{ role: "user", content: auftrag }],

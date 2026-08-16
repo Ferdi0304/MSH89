@@ -127,9 +127,19 @@ function track(bookingUrl) {
 // Baut eine getrackte Booking-Suche. Bei einem Hotelnamen findet
 // Booking meist direkt das Haus, sonst passende Alternativen am Ort.
 function searchUrl(params) {
-  var q = params.ort || "";
+  // Sonderzeichen wie Apostrophe stoeren Bookings Ortserkennung.
+  // ("Hotel d'Angleterre" fuehrte zu einer leeren Ergebnisseite.)
+  var q = (params.ort || "")
+    .replace(/[''’`]/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
   var u = "https://www.booking.com/searchresults.de.html?ss=" + encodeURIComponent(q);
-  u += "&ssne=" + encodeURIComponent(q) + "&ssne_untouched=" + encodeURIComponent(q);
+  // ssne signalisiert eine bewusst gewaehlte Destination. Das hilft bei
+  // Staedten, bricht aber bei Hotelnamen - deshalb nur ohne Komma setzen.
+  if (params.ort && params.ort.indexOf(",") === -1) {
+    u += "&ssne=" + encodeURIComponent(q) + "&ssne_untouched=" + encodeURIComponent(q);
+  }
   if (params.checkin) u += "&checkin=" + params.checkin;
   if (params.checkout) u += "&checkout=" + params.checkout;
   if (params.erwachsene) u += "&group_adults=" + params.erwachsene;
@@ -230,6 +240,9 @@ function AIChat() {
             "AM ENDE JEDER ANTWORT, ohne Kommentar und in eigenen Zeilen:\n" +
             "[MSH:1,3]  falls du eines unserer Haeuser empfohlen hast (Nummern oben)\n" +
             "[H:Hotelname|Stadt]  eine Zeile pro anderem empfohlenen Haus\n" +
+            "  Schreibe den offiziellen Hotelnamen genau so, wie er auf Booking.com steht - " +
+            "vollstaendig, ohne Zusaetze wie 'das' oder Beschreibungen. " +
+            "Empfiehl bevorzugt bekannte Haeuser, die sicher auf Booking gelistet sind.\n" +
             "[S:Stadt]  der Ort, um den es geht\n\n" +
             "Beispiel:\n[H:Hotel Arts Barcelona|Barcelona]\n[H:Casa Bonay|Barcelona]\n[S:Barcelona]",
           messages: verlauf
@@ -266,11 +279,12 @@ function AIChat() {
           var k = name.toLowerCase();
           if (seen[k]) return;
           seen[k] = 1;
-          liste.push({
-            name: name,
-            ort: stadt,
-            url: searchUrl({ ort: name + (stadt ? ", " + stadt : "") })
-          });
+          // Stadt nur anhaengen, wenn sie nicht schon im Namen steckt
+          var suchtext = name;
+          if (stadt && name.toLowerCase().indexOf(stadt.toLowerCase()) === -1) {
+            suchtext = name + ", " + stadt;
+          }
+          liste.push({ name: name, ort: stadt, url: searchUrl({ ort: suchtext }) });
         });
         setExternal(liste.slice(0, 4));
       }

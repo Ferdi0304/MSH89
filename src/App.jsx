@@ -116,54 +116,12 @@ const css = `
   }
 `;
 
-// === HOTEL-VERZEICHNIS ===
-// Jede per Websuche gefundene URL wird hier gespeichert.
-// Beim naechsten Mal wird sie direkt genutzt - ohne kostenpflichtige Suche.
-// Bekannte Haeuser koennen auch fest eingetragen werden (Key: Name kleingeschrieben).
-var KNOWN_HOTELS = {};
-
-function hotelKey(name) {
-  return (name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-}
-
-function loadCache() {
-  try {
-    var raw = localStorage.getItem("msh_hotels");
-    if (raw) {
-      var saved = JSON.parse(raw);
-      Object.keys(saved).forEach(function(k) {
-        if (!KNOWN_HOTELS[k]) KNOWN_HOTELS[k] = saved[k];
-      });
-    }
-  } catch (e) { /* localStorage nicht verfuegbar - kein Problem */ }
-}
-
-function rememberHotel(name, stadt, url) {
-  var k = hotelKey(name);
-  if (!k || !url) return;
-  KNOWN_HOTELS[k] = { name: name, stadt: stadt, url: url };
-  try {
-    localStorage.setItem("msh_hotels", JSON.stringify(KNOWN_HOTELS));
-  } catch (e) { /* ignorieren */ }
-}
-
 // === CJ AFFILIATE TRACKING ===
 // Website-ID: 101831910 | Link-ID: 15734849
 const CJ_BASE = "https://www.kqzyfj.com/click-101831910-15734849";
 
 function track(bookingUrl) {
   return CJ_BASE + "?url=" + encodeURIComponent(bookingUrl);
-}
-
-// Liest JSON aus einer Modellantwort. Modelle verpacken JSON gern
-// in Codebloecke oder schreiben Text davor - beides hier abfangen.
-function leseJson(text) {
-  if (!text) return null;
-  var s = text.replace(/```json/gi, "").replace(/```/g, "").trim();
-  var a = s.indexOf("{");
-  var b = s.lastIndexOf("}");
-  if (a === -1 || b === -1 || b < a) return null;
-  try { return JSON.parse(s.slice(a, b + 1)); } catch (e) { return null; }
 }
 
 function normal(s) {
@@ -173,7 +131,8 @@ function normal(s) {
 }
 
 // Waehlt kuratierte Hotels rein rechnerisch aus - keine Modellentscheidung.
-// Stadt oder Land muss uebereinstimmen, der Preis muss ins Budget passen.
+// Die Stadt muss exakt passen (nur Land reicht nicht), der Preis ins Budget.
+// So kann das Modell keinen Fehlgriff verursachen (z.B. Wien-Hotel bei Prag).
 function kuratierteTreffer(wunsch) {
   var ort = normal(wunsch.ort);
   var land = normal(wunsch.land);
@@ -184,8 +143,6 @@ function kuratierteTreffer(wunsch) {
     var hLand = normal(h.country);
 
     if (ort) {
-      // Stadt genannt: nur exakte Stadt zaehlt. Sonst kaeme auf "Rom"
-      // ein Hotel in Venedig, nur weil beide in Italien liegen.
       if (hOrt.indexOf(ort) === -1 && ort.indexOf(hOrt) === -1) return false;
     } else {
       if (hLand.indexOf(land) === -1 && land.indexOf(hLand) === -1) return false;
@@ -196,30 +153,26 @@ function kuratierteTreffer(wunsch) {
   }).slice(0, 3);
 }
 
-// Entfernt Marker, Markdown und entschuldigende Saetze.
-// Der Prompt allein verhindert Formulierungen wie "leider haben wir kein..."
-// nicht zuverlaessig - deshalb hier deterministisch nachraeumen.
-// Vertroestungen entfernen. Saetze wie "Lass mich suchen" sind wertlos,
-// weil die Suche in derselben Antwort bereits passiert sein muss.
+// Entschuldigende und vertroestende Saetze deterministisch entfernen -
+// der Prompt allein verhindert sie nicht zuverlaessig.
 var VERTROESTUNG = [
   /[^.!?\n]*\b(lass mich|ich (werde|kann|wuerde|würde))\b[^.!?\n]*\b(such|raussuch|finden|heraussuch|zusammenstell|schau)[^.!?\n]*[.!?]/gi,
   /[^.!?\n]*\b(sag|schreib|gib)\b[^.!?\n]*\bbescheid\b[^.!?\n]*\b(link|schick|such)[^.!?\n]*[.!?]/gi,
-  /[^.!?\n]*\bdann (schicke|sende|suche|finde) ich\b[^.!?\n]*[.!?]/gi,
-  /[^.!?\n]*\bgleich\b[^.!?\n]*\b(die besten|passende)\b[^.!?\n]*(deals|optionen|links)[^.!?\n]*[.!?]/gi
+  /[^.!?\n]*\bdann (schicke|sende|suche|finde) ich\b[^.!?\n]*[.!?]/gi
 ];
 
 var APOLOGY = [
   /[^.!?\n]*\b(leider|bedauerlicherweise)\b[^.!?\n]*(auswahl|angebot|portfolio|kurat|sortiment|haben wir|liste)[^.!?\n]*[.!?]/gi,
-  /[^.!?\n]*\b(nicht|kein[e]?[nsmr]?)\b[^.!?\n]*\b(unserer|unserem|unseren|in unser)\b[^.!?\n]*(auswahl|angebot|portfolio|sortiment|liste|hotels)[^.!?\n]*[.!?]/gi,
-  /[^.!?\n]*\b(in|aus)\s+unserer\s+(kuratierten\s+)?auswahl\b[^.!?\n]*\b(nicht|kein)[^.!?\n]*[.!?]/gi,
   /[^.!?\n]*\bunsere[rn]?\s+(kuratierte[rn]?\s+)?(auswahl|angebot)\b[^.!?\n]*\b(umfasst|enthaelt|enthält|bietet)\s+(leider\s+)?(kein|nicht)[^.!?\n]*[.!?]/gi
 ];
 
 function stripMarkers(t) {
   var s = (t || "")
-    .replace(/\[HOTELS:[\d,]+\]/g, "")
-    .replace(/\[SUCHE:[^\]]+\]/g, "")
-    .replace(/\[HOTEL:[^\]]+\]/g, "")
+    .replace(/\[HOTELS:[^\]]*\]/gi, "")
+    .replace(/\[HOTEL:[^\]]*\]/gi, "")
+    .replace(/\[SUCHE:[^\]]*\]/gi, "")
+    .replace(/\[BUDGET:[^\]]*\]/gi, "")
+    .replace(/\[GAESTE:[^\]]*\]/gi, "")
     .replace(/\*\*/g, "")
     .replace(/^#+\s*/gm, "")
     .replace(/https?:\/\/(?:www\.)?booking\.com\/hotel\/[a-z]{2}\/[^\s<>")\]]+/gi, "");
@@ -232,31 +185,17 @@ function stripMarkers(t) {
     .trim();
 }
 
-// Baut aus einem Booking-Slug einen lesbaren Namen:
-// /hotel/it/gritti-palace.de.html -> "Gritti Palace"
-// Wird gebraucht, wenn ein Suchtreffer keinen brauchbaren Titel hat.
-function nameAusUrl(url) {
-  var m = (url || "").match(/\/hotel\/[a-z]{2}\/([^\/?.]+)/i);
-  if (!m) return "Unterkunft";
-  return m[1]
-    .replace(/[-_]+/g, " ")
-    .replace(/\b\w/g, function(c) { return c.toUpperCase(); })
-    .trim();
-}
-
+// Baut eine Booking-Suche fuer eine Stadt. Nur der Ort als Suchbegriff -
+// kein Hotelname, kein Zusatz nach einem Komma, sonst zeigt Booking fremde
+// Hotels. Kein harter Preisfilter, der die Liste leeren wuerde; bei Budget
+// stattdessen guenstigste zuerst sortieren. Diese Links funktionieren immer.
 function searchUrl(params) {
   var q = params.ort || "";
-  // Nur der Ort als Suchbegriff. Kein Hotelname, kein Zusatz nach einem
-  // Komma - sonst liest Booking den zweiten Teil als Stadt und zeigt
-  // fremde Hotels.
   var u = "https://www.booking.com/searchresults.de.html?ss=" + encodeURIComponent(q);
   if (params.checkin) u += "&checkin=" + params.checkin;
   if (params.checkout) u += "&checkout=" + params.checkout;
   if (params.erwachsene) u += "&group_adults=" + params.erwachsene;
   u += "&no_rooms=1";
-  // Bei Budget nicht hart filtern - ein kaputter oder zu enger nflt-Filter
-  // liefert eine leere Ergebnisliste. Stattdessen guenstigste zuerst
-  // sortieren; der Nutzer sieht echte Treffer und kann selbst weiter filtern.
   if (params.maxPreis) u += "&order=price";
   u += "&selected_currency=EUR&lang=de";
   return track(u);
@@ -286,65 +225,32 @@ function HotelCard({ hotel, highlight }) {
   );
 }
 
+// === KI-BERATER ===
+// Ein einziger, natuerlicher Modellaufruf. Guenstig (~1 Cent, keine Websuche)
+// und bessere Antworten, weil das Modell frei formulieren darf.
+// Die Links entstehen NICHT aus dem, was das Modell schreibt, sondern rein
+// im Code aus zwei zuverlaessigen Quellen:
+//   - geprueften URLs unserer kuratierten Haeuser (kuratierteTreffer)
+//   - einer sauberen Stadt-Suche bei Booking (searchUrl)
+// Das Modell liefert nur kurze Marker ([SUCHE: Stadt] usw.), die der Code
+// auswertet. So kann eine erfundene URL gar nicht erst als Link erscheinen.
 function AIChat() {
-  var initialMsgs = [{ role: "assistant", text: "Hallo! Ich bin dein persoenlicher Hotel-Concierge von MySpecialHotel.\n\nBeschreib mir deinen Traumurlaub - Reiseziel, Budget, Stimmung - und ich finde das passende Haus fuer dich. Egal ob aus unserer kuratierten Auswahl oder aus dem weltweiten Angebot." }];
+  var initialMsgs = [{ role: "assistant", text: "Hallo! Ich bin dein persoenlicher Hotel-Concierge von MySpecialHotel.\n\nBeschreib mir deinen Traumurlaub - Reiseziel, Budget, Stimmung - und ich empfehle dir das passende Haus. Egal ob aus unserer kuratierten Auswahl oder weltweit." }];
   var [msgs, setMsgs] = useState(initialMsgs);
   var [input, setInput] = useState("");
   var [loading, setLoading] = useState(false);
   var [suggested, setSuggested] = useState([]);
   var [searchLink, setSearchLink] = useState(null);
-  var [external, setExternal] = useState([]);
   var bottomRef = useRef(null);
-
-  useEffect(function() { loadCache(); }, []);
 
   useEffect(function() {
     if (bottomRef.current) bottomRef.current.scrollIntoView({ behavior: "smooth" });
-  }, [msgs, loading, suggested, searchLink, external]);
+  }, [msgs, loading, suggested, searchLink]);
 
-  // Ein API-Aufruf mit klar begrenzter Aufgabe.
-  var frage = async function(system, messages, mitSuche) {
-    var body = {
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: mitSuche ? 1200 : 400,
-      system: system,
-      messages: messages
-    };
-    if (mitSuche) body.tools = [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }];
-
-    var res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body)
-    });
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    var data = await res.json();
-
-    var bloecke = data.content || [];
-    var texte = bloecke
-      .filter(function(b) { return b.type === "text" || (!b.type && b.text); })
-      .map(function(b) { return (b.text || "").trim(); })
-      .filter(function(t) { return t.length > 0; });
-
-    // Bei Suchen liefert die API mehrere Bloecke - der letzte ist die Antwort.
-    var urls = [];
-    (function sammle(x) {
-      if (!x) return;
-      if (Array.isArray(x)) { x.forEach(sammle); return; }
-      if (typeof x === "object") {
-        if (typeof x.url === "string" && /booking\.com\/hotel\/[a-z]{2}\//i.test(x.url)) {
-          urls.push({ url: x.url.split("?")[0], titel: x.title || "" });
-        }
-        Object.keys(x).forEach(function(k) { sammle(x[k]); });
-      }
-    })(bloecke);
-
-    return {
-      text: texte.length ? texte[texte.length - 1] : "",
-      alle: texte.join("\n"),
-      urls: urls
-    };
-  };
+  // Kuratierte Haeuser fuer den Prompt - OHNE Preise (duerfen nicht geleakt werden).
+  var hotelListe = HOTELS.map(function(h) {
+    return "- " + h.name + " (" + h.city + ", " + h.country + "; " + h.tags.join(", ") + ")";
+  }).join("\n");
 
   var send = async function() {
     if (!input.trim() || loading) return;
@@ -355,149 +261,76 @@ function AIChat() {
     setLoading(true);
     setSuggested([]);
     setSearchLink(null);
-    setExternal([]);
 
     var verlauf = neueMsgs
       .filter(function(m, i) { return !(i === 0 && m.role === "assistant"); })
       .filter(function(m) { return m.text && m.text.trim(); })
-      .map(function(m) {
-        return { role: m.role === "user" ? "user" : "assistant", content: m.text.trim() };
-      })
+      .map(function(m) { return { role: m.role === "user" ? "user" : "assistant", content: m.text.trim() }; })
       .slice(-12);
     while (verlauf.length && verlauf[0].role !== "user") verlauf.shift();
 
+    var system =
+      "Du bist der persoenliche Hotel-Concierge von MySpecialHotel. Antworte natuerlich, " +
+      "warm und konkret auf Deutsch - wie ein guter Reiseberater aus Fleisch und Blut. Gib " +
+      "echte Empfehlungen zu Reisezielen, Stadtvierteln und Hotels.\n\n" +
+      "Unsere handverlesenen Haeuser:\n" + hotelListe + "\n\n" +
+      "SO ARBEITEST DU:\n" +
+      "1. Sobald das Reiseziel klar ist, schreibe GANZ AM ENDE deiner Antwort den Marker " +
+      "[SUCHE: Stadt] - nur die Stadt, sonst nichts (kein Hotelname, kein Land hinter einem Komma).\n" +
+      "2. Hat der Nutzer ein Budget pro Nacht genannt, haenge zusaetzlich [BUDGET: Zahl] an.\n" +
+      "3. Hat er eine Personenzahl genannt, haenge zusaetzlich [GAESTE: Zahl] an.\n" +
+      "4. Passt eines unserer Haeuser zur genannten Stadt, empfiehl es im Text namentlich.\n" +
+      "5. Ist das Reiseziel noch unklar, stelle EINE kurze Rueckfrage und schlage 2-3 konkrete " +
+      "Ziele vor - und setze in diesem Fall KEINEN [SUCHE:]-Marker.\n\n" +
+      "REGELN:\n" +
+      "- Erfinde niemals Preise, Sterne oder Bewertungen und nenne keine konkreten Preise.\n" +
+      "- Schreibe niemals selbst Links, URLs oder booking.com-Adressen.\n" +
+      "- Vertroeste nicht ('ich suche gleich...') - deine Empfehlung steht sofort hier.\n" +
+      "- Halte dich kurz: 2 bis 4 Saetze, danach die Marker.";
+
     try {
-      // ===== SCHRITT 1: Wunsch verstehen =====
-      // Einzige Aufgabe. Keine Hotels im Kontext, also keine Versuchung,
-      // vorhandene Haeuser statt passender zu nennen.
-      var verstehen = await frage(
-        "Du liest ein Gespraech ueber eine Hotelsuche und gibst NUR JSON zurueck, keinen anderen Text.\n\n" +
-        "Format:\n" +
-        '{"ort":"Stadt oder null","land":"Land oder null","maxPreis":Zahl oder null,' +
-        '"personen":Zahl,"art":"Hotel|Hostel|Apartment|Resort","stichworte":["..."],' +
-        '"frage":"eine kurze Rueckfrage oder null","vorschlaege":["Ort1","Ort2"]}\n\n' +
-        "REGELN:\n" +
-        "1. Beruecksichtige das GANZE Gespraech. Einmal genannte Angaben bleiben gueltig.\n" +
-        "2. Ist kein Ort genannt, aber eine Richtung erkennbar (Strand, Berge, Party, Staedtetrip), " +
-        "waehle selbst einen konkreten passenden Ort und setze ihn in 'ort'.\n" +
-        "3. Nur wenn wirklich gar nichts erkennbar ist: ort=null, dazu eine kurze 'frage' " +
-        "und 2-3 konkrete 'vorschlaege'.\n" +
-        "4. Preiswoerter uebersetzen: 'moeglichst billig'=60, 'guenstig'=90, 'gehoben'=250. " +
-        "Zahlen im Text haben Vorrang.\n" +
-        "5. personen: Standard 2, wenn nichts gesagt wurde.\n" +
-        "6. Antworte ausschliesslich mit dem JSON-Objekt.",
-        verlauf,
-        false
-      );
-
-      var w = leseJson(verstehen.text) || {};
-      var wunsch = {
-        ort: w.ort || "",
-        land: w.land || "",
-        maxPreis: typeof w.maxPreis === "number" ? w.maxPreis : null,
-        personen: typeof w.personen === "number" ? w.personen : 2,
-        art: w.art || "Hotel",
-        stichworte: Array.isArray(w.stichworte) ? w.stichworte : []
-      };
-
-      // Kein Ziel erkennbar: eine Frage, dazu klickbare Vorschlaege.
-      if (!wunsch.ort) {
-        var vs = Array.isArray(w.vorschlaege) ? w.vorschlaege.slice(0, 3) : [];
-        var text = w.frage || "Wohin soll es denn gehen?";
-        if (vs.length) text += " Beliebt sind gerade " + vs.join(", ") + ".";
-        setMsgs(function(p) { return p.concat([{ role: "assistant", text: text }]); });
-        setLoading(false);
-        return;
-      }
-
-      // ===== SCHRITT 2: Kuratierte Hotels rein rechnerisch pruefen =====
-      var eigene = kuratierteTreffer(wunsch);
-      setSuggested(eigene);
-
-      setSearchLink({
-        url: searchUrl({
-          ort: wunsch.ort,
-          maxPreis: wunsch.maxPreis || undefined,
-          erwachsene: wunsch.personen
-        }),
-        ort: wunsch.ort
+      var res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 500,
+          system: system,
+          messages: verlauf
+        })
       });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      var data = await res.json();
 
-      // ===== SCHRITT 3: Suchen, nur wenn noetig =====
-      var brauchtSuche = eigene.length < 2;
-      if (!brauchtSuche) {
-        var s = eigene.length === 1 ? "Ein Haus" : eigene.length + " Haeuser";
-        setMsgs(function(p) { return p.concat([{
-          role: "assistant",
-          text: s + " in " + wunsch.ort + " passen zu deinem Wunsch."
-        }]); });
-        setLoading(false);
-        return;
+      var roh = (data.content || [])
+        .filter(function(b) { return b.type === "text" || (!b.type && b.text); })
+        .map(function(b) { return b.text || ""; })
+        .join("\n")
+        .trim();
+
+      // Marker auslesen - daraus baut der Code die Links.
+      var mOrt = roh.match(/\[SUCHE:\s*([^\]]+)\]/i);
+      var mBudget = roh.match(/\[BUDGET:\s*(\d+)\]/i);
+      var mGaeste = roh.match(/\[GAESTE:\s*(\d+)\]/i);
+
+      var ort = mOrt ? mOrt[1].replace(/,.*$/, "").trim() : "";
+      var budget = mBudget ? parseInt(mBudget[1], 10) : null;
+      var gaeste = mGaeste ? parseInt(mGaeste[1], 10) : 2;
+
+      if (ort) {
+        // Kuratierte Treffer rein rechnerisch (exakte Stadt, Budget aus dem Code).
+        var eigene = kuratierteTreffer({ ort: ort, maxPreis: budget || null });
+        setSuggested(eigene);
+        // Immer eine funktionierende Stadt-Suche als Absicherung.
+        setSearchLink({
+          url: searchUrl({ ort: ort, maxPreis: budget || undefined, erwachsene: gaeste }),
+          ort: ort
+        });
       }
 
-      var bekannteZeilen = Object.keys(KNOWN_HOTELS).map(function(k) {
-        var h = KNOWN_HOTELS[k];
-        return h.name + " | " + h.url;
-      }).slice(0, 40);
-
-      var auftrag =
-        "Finde " + (3 - eigene.length) + " Unterkuenfte in " + wunsch.ort +
-        (wunsch.land ? " (" + wunsch.land + ")" : "") +
-        " fuer " + wunsch.personen + " Personen, Art: " + wunsch.art +
-        (wunsch.maxPreis ? ", maximal " + wunsch.maxPreis + " EUR pro Nacht" : "") +
-        (wunsch.stichworte.length ? ", Merkmale: " + wunsch.stichworte.join(", ") : "") + ".";
-
-      var suchen = await frage(
-        "Du bist Hotel-Rechercheur. Deine einzige Aufgabe: echte Booking.com-Seiten finden.\n\n" +
-        "ABLAUF:\n" +
-        "1. Nutze web_search mit dem Muster: site:booking.com \"Stadt\" Hotel\n" +
-        "2. Nimm aus den Treffern nur URLs der Form https://www.booking.com/hotel/XX/name.html\n" +
-        "3. Erfinde NIEMALS eine URL. Nur was in den Suchergebnissen stand.\n\n" +
-        (bekannteZeilen.length ? "Bereits bekannt (URL direkt nutzbar, nicht erneut suchen):\n" + bekannteZeilen.join("\n") + "\n\n" : "") +
-        "Antworte NUR mit diesem JSON, ohne weiteren Text:\n" +
-        '{"text":"2 Saetze auf Deutsch ueber die gefundenen Haeuser","hotels":' +
-        '[{"name":"Hotelname","url":"https://www.booking.com/hotel/xx/name.html"}]}\n\n' +
-        "Im 'text' darfst du NUR Haeuser erwaehnen, die auch in 'hotels' stehen. " +
-        "Keine Preise nennen, die du nicht gepruefte hast. Keine Rueckfragen.",
-        [{ role: "user", content: auftrag }],
-        true
-      );
-
-      var erg = leseJson(suchen.text) || leseJson(suchen.alle) || {};
-
-      // WICHTIG - hier lag der Fehler mit den "fremden Hotels":
-      // Buttons entstehen NUR aus URLs, die die Websuche wirklich
-      // zurueckgeliefert hat (suchen.urls). Diese Seiten existieren
-      // garantiert, weil sie aus echten Suchtreffern stammen.
-      // Vom Modell frei geschriebene URLs (erg.hotels) werden fuer die
-      // Links NICHT verwendet - sie sind oft erfunden, bestehen zwar die
-      // Formpruefung, fuehren bei Booking aber ins Leere und landen dann
-      // auf einer Suche mit fremden Hotels.
-      var seen = {};
-      var liste = [];
-      suchen.urls.forEach(function(u) {
-        var clean = (u.url || "").split("?")[0];
-        if (!/^https?:\/\/(www\.)?booking\.com\/hotel\/[a-z]{2}\//i.test(clean)) return;
-        if (seen[clean]) return;
-        seen[clean] = 1;
-        var titel = (u.titel || "").split(/[,|\u2013\-]/)[0].trim();
-        var name = titel && titel.length > 2 ? titel : nameAusUrl(clean);
-        rememberHotel(name, wunsch.ort, clean);
-        liste.push({ name: name, ort: wunsch.ort, url: track(clean) });
-      });
-      liste = liste.slice(0, 3 - eigene.length);
-
-      setExternal(liste);
-
-      var antwort = (erg.text || "").trim();
-      if (!antwort) {
-        antwort = liste.length
-          ? "Hier sind passende Unterkuenfte in " + wunsch.ort + "."
-          : "In " + wunsch.ort + " findest du die aktuelle Auswahl direkt bei Booking.";
-      }
-      antwort = stripMarkers(antwort);
-
-      setMsgs(function(p) { return p.concat([{ role: "assistant", text: antwort }]); });
+      var text = stripMarkers(roh);
+      if (!text) text = "Erzaehl mir etwas mehr - wohin soll es gehen und was ist dir wichtig?";
+      setMsgs(function(p) { return p.concat([{ role: "assistant", text: text }]); });
 
     } catch (e) {
       setMsgs(function(p) { return p.concat([{
@@ -526,11 +359,8 @@ function AIChat() {
         {loading && (
           <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
             <div style={{ width: 30, height: 30, borderRadius: "50%", background: ACCENT_LIGHT, border: "1px solid #e9d06a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>AI</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 7, padding: "11px 15px", background: "#f9fafb", border: "1px solid " + BORDER, borderRadius: "18px 18px 18px 4px" }}>
-              <div style={{ display: "flex", gap: 5 }}>
+            <div style={{ display: "flex", gap: 5, padding: "13px 16px", background: "#f9fafb", border: "1px solid " + BORDER, borderRadius: "18px 18px 18px 4px" }}>
               {[0,1,2].map(function(i) { return <div key={i} style={{ width: 7, height: 7, borderRadius: "50%", background: ACCENT, animation: "bounce 1.2s " + (i * 0.2) + "s infinite" }} />; })}
-              </div>
-              <div style={{ fontSize: 11, color: GRAY }}>Suche passende Hotels...</div>
             </div>
           </div>
         )}
@@ -538,22 +368,6 @@ function AIChat() {
           <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 4 }}>
             <div style={{ fontSize: 12, color: ACCENT, fontWeight: 600, fontFamily: "Inter, sans-serif", textTransform: "uppercase", letterSpacing: 1 }}>Passende Hotels fuer dich</div>
             {suggested.map(function(h) { return <HotelCard key={h.id} hotel={h} highlight={true} />; })}
-          </div>
-        )}
-        {external.length > 0 && !loading && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 6 }}>
-            <div style={{ fontSize: 11, color: ACCENT, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>Weitere Empfehlungen</div>
-            {external.map(function(h, i) {
-              return (
-                <a key={i} href={h.url} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, background: "#fff", border: "1.5px solid " + BORDER, borderRadius: 14, padding: "14px 16px", textDecoration: "none", transition: "all 0.2s" }} onMouseEnter={function(e){e.currentTarget.style.borderColor=ACCENT;}} onMouseLeave={function(e){e.currentTarget.style.borderColor=BORDER;}}>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 15, fontWeight: 700, color: TEXT, marginBottom: 2 }}>{h.name}</div>
-                    <div style={{ fontSize: 12, color: GRAY }}>{h.ort}</div>
-                  </div>
-                  <span className="btn-gold" style={{ padding: "9px 17px", fontSize: 12, whiteSpace: "nowrap", flexShrink: 0 }}>Suchen →</span>
-                </a>
-              );
-            })}
           </div>
         )}
         {searchLink && !loading && (
@@ -578,7 +392,7 @@ function AIChat() {
   );
 }
 
-// Zeigt die taeglich per Websuche gefundenen Unterkuenfte.
+// Zeigt die taeglich per Websuche gefundenen Unterkuenfte fuer den Nomad-Bereich.
 // Die Daten kommen aus /api/deals und liegen dort 24 Stunden im
 // Zwischenspeicher - der Aufruf hier kostet also nichts extra.
 function TaeglicheListe({ typ }) {
@@ -716,10 +530,9 @@ export default function App() {
     var matchSearch = q === "" || h.name.toLowerCase().includes(q) || h.city.toLowerCase().includes(q) || h.country.toLowerCase().includes(q) || h.tags.some(function(t) { return t.toLowerCase().includes(q); });
     return matchCat && matchSearch;
   });
-  var deals = HOTELS.filter(function(h) { return h.lastMinute; });
   var nomads = HOTELS.filter(function(h) { return h.nomad; });
 
-  var TABS = [["home","Start"],["deals","Deals"],["nomad","Nomad"],["ai","KI-Berater"]];
+  var TABS = [["home","Start"],["nomad","Nomad"],["ai","KI-Berater"]];
   var CATS = [["all","Alle"],["wellness","Wellness"],["design","Design"],["luxury","Luxus"],["nomad","Nomad"]];
 
   return (
@@ -747,10 +560,10 @@ export default function App() {
               <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(38px,7vw,80px)", fontWeight: 900, lineHeight: 1.08, color: TEXT, marginBottom: 20 }} className="hero-title">
                 Dein perfektes<br /><span style={{ color: ACCENT }}>Hotel</span>, jederzeit.
               </h1>
-              <p style={{ fontSize: 18, color: GRAY, maxWidth: 500, margin: "0 auto 36px", lineHeight: 1.7 }}>KI-Beratung - Last Minute Deals - Nomad-Hotels.<br />Alles an einem Ort, kostenlos und ehrlich.</p>
+              <p style={{ fontSize: 18, color: GRAY, maxWidth: 500, margin: "0 auto 36px", lineHeight: 1.7 }} className="hero-p">Persönliche KI-Beratung und handverlesene Hotels.<br />Ehrlich, unabhängig und kostenlos.</p>
               <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }} className="hero-buttons">
                 <button onClick={function() { setTab("ai"); }} className="btn-gold" style={{ fontSize: 15, padding: "14px 28px", borderRadius: 12, boxShadow: "0 4px 20px rgba(201,150,12,0.3)" }}>KI-Berater starten</button>
-                <button onClick={function() { setTab("deals"); }} style={{ background: "#fff", border: "1.5px solid " + BORDER, borderRadius: 12, padding: "14px 28px", color: TEXT, fontWeight: 600, fontSize: 15, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>Last Minute Deals</button>
+                <button onClick={function() { setTab("nomad"); }} style={{ background: "#fff", border: "1.5px solid " + BORDER, borderRadius: 12, padding: "14px 28px", color: TEXT, fontWeight: 600, fontSize: 15, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>Nomad Hotels</button>
               </div>
             </div>
           </div>
@@ -796,28 +609,6 @@ export default function App() {
                 <button onClick={function() { setSearch(""); setCat("all"); }} style={{ marginTop: 12, background: ACCENT, color: "#fff", border: "none", borderRadius: 20, padding: "8px 20px", cursor: "pointer", fontFamily: "Inter, sans-serif", fontWeight: 600 }}>Suche zurücksetzen</button>
               </div>
             )}
-          </div>
-        </div>
-      )}
-
-      {tab === "deals" && (
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "48px 24px" }} className="page-padding">
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <div style={{ display: "inline-block", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 20, padding: "5px 16px", fontSize: 12, color: "#ef4444", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", marginBottom: 16 }}>Taeglich neu recherchiert</div>
-            <h2 className="section-h" style={{ fontFamily: "'Playfair Display', serif", fontSize: 40, fontWeight: 900, color: TEXT }}>Last Minute Deals</h2>
-            <p style={{ color: GRAY, marginTop: 10, fontSize: 16 }}>Guenstige Unterkuenfte, taeglich neu recherchiert</p>
-          </div>
-
-          <TaeglicheListe typ="deals" />
-
-          <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 700, color: TEXT, margin: "48px 0 20px", textAlign: "center" }}>Unsere Empfehlungen</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px,1fr))", gap: 20 }} className="hotel-grid">
-            {deals.map(function(h) { return <HotelCard key={h.id} hotel={h} />; })}
-          </div>
-          <div style={{ marginTop: 48, padding: 32, borderRadius: 20, background: ACCENT_LIGHT, border: "1px solid #e9d06a", textAlign: "center" }}>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, color: TEXT, marginBottom: 8 }}>Nichts Passendes dabei?</div>
-            <p style={{ color: GRAY, marginBottom: 20 }}>Unser KI-Berater findet das perfekte Hotel fuer dich!</p>
-            <button onClick={function() { setTab("ai"); }} className="btn-gold" style={{ borderRadius: 10, padding: "12px 28px" }}>KI-Berater fragen</button>
           </div>
         </div>
       )}

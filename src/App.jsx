@@ -124,35 +124,22 @@ function track(bookingUrl) {
   return CJ_BASE + "?url=" + encodeURIComponent(bookingUrl);
 }
 
-// Entschuldigende und vertroestende Saetze deterministisch entfernen -
-// der Prompt allein verhindert sie nicht zuverlaessig.
-var VERTROESTUNG = [
-  /[^.!?\n]*\b(lass mich|ich (werde|kann|wuerde|würde))\b[^.!?\n]*\b(such|raussuch|finden|heraussuch|zusammenstell|schau)[^.!?\n]*[.!?]/gi,
-  /[^.!?\n]*\b(sag|schreib|gib)\b[^.!?\n]*\bbescheid\b[^.!?\n]*\b(link|schick|such)[^.!?\n]*[.!?]/gi,
-  /[^.!?\n]*\bdann (schicke|sende|suche|finde) ich\b[^.!?\n]*[.!?]/gi
-];
-
-var APOLOGY = [
-  /[^.!?\n]*\b(leider|bedauerlicherweise)\b[^.!?\n]*(auswahl|angebot|portfolio|kurat|sortiment|haben wir|liste)[^.!?\n]*[.!?]/gi,
-  /[^.!?\n]*\bunsere[rn]?\s+(kuratierte[rn]?\s+)?(auswahl|angebot)\b[^.!?\n]*\b(umfasst|enthaelt|enthält|bietet)\s+(leider\s+)?(kein|nicht)[^.!?\n]*[.!?]/gi
-];
-
+// Entfernt NUR die technischen Marker und Markdown-Reste.
+// WICHTIG: Hier wird bewusst NICHT mehr am Inhalt gefiltert. Frueher standen
+// hier Regexe gegen entschuldigende und vertroestende Saetze - die waren gegen
+// Haikus Schwaechen gebaut. Bei Sonnet haben sie ganze Antworten zerschnitten
+// oder komplett geloescht. Sonnet formuliert selbst sauber; der Prompt regelt
+// den Rest.
 function stripMarkers(t) {
-  var s = (t || "")
-    .replace(/\[HOTELS:[^\]]*\]/gi, "")
+  return (t || "")
     .replace(/\[HOTEL:[^\]]*\]/gi, "")
     .replace(/\[SUCHE:[^\]]*\]/gi, "")
-    .replace(/\[BUDGET:[^\]]*\]/gi, "")
-    .replace(/\[GAESTE:[^\]]*\]/gi, "")
+    .replace(/\[HOTELS:[^\]]*\]/gi, "")
     .replace(/\*\*/g, "")
     .replace(/^#+\s*/gm, "")
-    .replace(/https?:\/\/(?:www\.)?booking\.com\/hotel\/[a-z]{2}\/[^\s<>")\]]+/gi, "");
-  APOLOGY.forEach(function(re) { s = s.replace(re, ""); });
-  VERTROESTUNG.forEach(function(re) { s = s.replace(re, ""); });
-  return s
+    .replace(/https?:\/\/(?:www\.)?booking\.com\/[^\s<>")\]]+/gi, "")
     .replace(/[ \t]{2,}/g, " ")
     .replace(/\n{3,}/g, "\n\n")
-    .replace(/^\s*[\n]+/, "")
     .trim();
 }
 
@@ -230,6 +217,7 @@ function AIChat() {
 
     var verlauf = neueMsgs
       .filter(function(m, i) { return !(i === 0 && m.role === "assistant"); })
+      .filter(function(m) { return !m.ersatz; })
       .filter(function(m) { return m.text && m.text.trim(); })
       .map(function(m) { return { role: m.role === "user" ? "user" : "assistant", content: m.text.trim() }; })
       .slice(-12);
@@ -238,21 +226,26 @@ function AIChat() {
     var system =
       "Du bist ein exzellenter, unabhaengiger Reiseberater fuer MySpecialHotel - so " +
       "kompetent und konkret wie ein persoenlicher Concierge. Antworte auf Deutsch.\n\n" +
-      "Wenn Reiseziel und Wunsch klar sind, empfiehl 3 bis 4 echte, existierende Hotels, " +
-      "die wirklich passen (Lage, Stil, Preisklasse), jeweils mit einem Satz, warum. Nenne " +
-      "nur reale Haeuser, die es wirklich gibt - erfinde keine.\n\n" +
-      "Ist das Ziel oder der Wunsch noch unklar, stelle EINE kurze Rueckfrage und schlage " +
-      "2-3 konkrete Ziele vor - und gib in diesem Fall KEINE Hotelliste und KEINE Marker aus.\n\n" +
-      "GANZ AM ENDE, nach dem sichtbaren Text, gib fuer JEDES empfohlene Hotel eine Zeile in " +
-      "exakt diesem Format aus (der Nutzer sieht diese Zeilen nicht):\n" +
-      "[HOTEL: Exakter Hotelname | Stadt]\n" +
-      "Danach eine Zeile fuer den Zielort:\n" +
-      "[SUCHE: Stadt]\n\n" +
+      "DEINE WICHTIGSTE REGEL: Empfiehl, statt zu fragen. Sobald irgendein Ziel " +
+      "erkennbar ist - Land, Insel, Region oder Stadt - gibst du SOFORT 3 bis 4 konkrete " +
+      "Unterkuenfte. Frage dann nicht mehr nach Details. Fehlt dir etwas, triff eine " +
+      "sinnvolle Annahme und sage sie in einem Halbsatz dazu.\n\n" +
+      "Nur wenn ueberhaupt kein Ziel und keine Richtung erkennbar ist, stelle EINE kurze " +
+      "Rueckfrage mit 2-3 konkreten Vorschlaegen. Hoechstens einmal im ganzen Gespraech - " +
+      "hast du schon einmal gefragt, wird jetzt empfohlen.\n\n" +
+      "Empfiehl echte, existierende Haeuser mit je einem Satz, warum sie passen (Lage, " +
+      "Stil, Umgebung). Erfinde keine Namen. Passe die Art der Unterkunft dem Wunsch an - " +
+      "wer ein Apartment sucht, bekommt Apartments und Aparthotels, kein Grandhotel.\n\n" +
+      "GANZ AM ENDE, nach dem sichtbaren Text, gib fuer JEDE empfohlene Unterkunft eine " +
+      "Zeile in exakt diesem Format aus (der Nutzer sieht diese Zeilen nicht):\n" +
+      "[HOTEL: Exakter Name | Stadt oder Ort]\n" +
+      "Danach eine Zeile fuer die Zielregion:\n" +
+      "[SUCHE: Stadt oder Insel]\n\n" +
       "REGELN:\n" +
       "- Erfinde niemals Preise, Sterne oder Bewertungszahlen und nenne keine konkreten Preise.\n" +
       "- Schreibe im sichtbaren Text niemals selbst Links oder booking.com-Adressen.\n" +
       "- Vertroeste nicht ('ich suche gleich...') - deine Empfehlung steht sofort hier.\n" +
-      "- Halte den sichtbaren Text angenehm knapp: kurze Einleitung, dann die Hotels mit je einem Satz.";
+      "- Halte den sichtbaren Text angenehm knapp: kurze Einleitung, dann die Haeuser mit je einem Satz.";
 
     try {
       var res = await fetch("/api/chat", {
@@ -298,14 +291,26 @@ function AIChat() {
         if (ort) setSearchLink({ url: searchUrl({ ort: ort }), ort: ort });
       }
 
+      // Der sichtbare Text ist Sonnets Antwort ohne die technischen Marker.
+      // Nur wenn wirklich nichts uebrig bleibt, gibt es einen Ersatztext -
+      // und der wird NICHT in den Verlauf uebernommen (Flag ausserhalb),
+      // sonst haelt Sonnet ihn beim naechsten Mal fuer seine eigene Frage
+      // und stellt endlos Rueckfragen.
       var text = stripMarkers(roh);
-      if (!text) text = "Erzaehl mir etwas mehr - wohin soll es gehen und was ist dir wichtig?";
-      setMsgs(function(p) { return p.concat([{ role: "assistant", text: text }]); });
+      var istErsatz = false;
+      if (!text) {
+        text = liste.length
+          ? "Hier sind meine Empfehlungen:"
+          : "Sag mir einfach ein Land oder eine Stadt, dann lege ich los.";
+        istErsatz = true;
+      }
+      setMsgs(function(p) { return p.concat([{ role: "assistant", text: text, ersatz: istErsatz }]); });
 
     } catch (e) {
       setMsgs(function(p) { return p.concat([{
         role: "assistant",
-        text: "Da ist gerade etwas schiefgelaufen. Versuch es bitte nochmal."
+        text: "Da ist gerade etwas schiefgelaufen. Versuch es bitte nochmal.",
+        ersatz: true
       }]); });
     }
     setLoading(false);

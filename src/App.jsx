@@ -147,6 +147,35 @@ function stripMarkers(t) {
 // kein Hotelname, kein Zusatz nach einem Komma, sonst zeigt Booking fremde
 // Hotels. Kein harter Preisfilter, der die Liste leeren wuerde; bei Budget
 // stattdessen guenstigste zuerst sortieren. Diese Links funktionieren immer.
+// Baut den Suchbegriff fuer ein einzelnes Haus.
+//
+// WICHTIG - hier steckt der Unterschied zwischen "funktioniert" und "leere Seite":
+// Bookings ss-Parameter ist ein ZIEL-Parser, kein Volltext-Hotelsuchfeld. Er
+// versucht, den ganzen String als Ort aufzuloesen. "Vraxos Apartments Stalis"
+// ergibt kein Ziel -> leere Trefferliste.
+//
+// Mit einem KOMMA vor dem Ort liest Booking den Teil dahinter als Ortsangabe.
+// Findet der Parser das Haus, landet man darauf. Findet er es nicht, faellt er
+// auf die Stadt zurueck und zeigt eine volle Liste am richtigen Ort. Also
+// schlimmstenfalls die richtige Stadt statt einer leeren Seite.
+//
+// Der Name wird vorher gekuerzt: Marketingzusaetze nach Komma oder Gedankenstrich
+// ("Blue Palace, a Luxury Collection Resort & Spa") verwirren den Parser.
+function hotelSuchbegriff(name, ort) {
+  var n = (name || "")
+    .split(",")[0]
+    .split(" \u2013 ")[0]
+    .split(" \u2014 ")[0]
+    .split(" - ")[0]
+    .replace(/\s*&\s*/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  var teile = n.split(" ");
+  if (teile.length > 6) n = teile.slice(0, 6).join(" ");
+  if (!n) return ort || "";
+  return ort ? n + ", " + ort : n;
+}
+
 function searchUrl(params) {
   var q = params.ort || "";
   var u = "https://www.booking.com/searchresults.de.html?ss=" + encodeURIComponent(q);
@@ -298,7 +327,7 @@ function AIChat() {
         var key = (name + "|" + stadt).toLowerCase();
         if (seen[key]) return;
         seen[key] = 1;
-        var suchbegriff = (name + " " + stadt).replace(/,/g, " ").replace(/\s+/g, " ").trim();
+        var suchbegriff = hotelSuchbegriff(name, stadt);
         liste.push({ name: name, stadt: stadt, url: searchUrl({ ort: suchbegriff }) });
       });
       setEmpfehlungen(liste.slice(0, 5));

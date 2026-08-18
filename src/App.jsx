@@ -149,18 +149,20 @@ function stripMarkers(t) {
 // stattdessen guenstigste zuerst sortieren. Diese Links funktionieren immer.
 // Baut den Suchbegriff fuer ein einzelnes Haus.
 //
-// WICHTIG - hier steckt der Unterschied zwischen "funktioniert" und "leere Seite":
-// Bookings ss-Parameter ist ein ZIEL-Parser, kein Volltext-Hotelsuchfeld. Er
-// versucht, den ganzen String als Ort aufzuloesen. "Vraxos Apartments Stalis"
-// ergibt kein Ziel -> leere Trefferliste.
+// WICHTIG - warum hier NUR der Name steht und nicht der Ort:
+// Bookings ss-Parameter ist ein Ziel-Parser. Bekommt er "Name, Stadt" und das
+// Haus liegt gar nicht in dieser Stadt, findet er nichts und liefert eine LEERE
+// Seite. Genau das ist der haeufigste Fall: Sonnet kennt die Haeuser, verortet
+// sie aber oft falsch (echtes Beispiel: "Apartamentos Buenavista" steht bei
+// Booking in Puerto Rico de Gran Canaria, Sonnet schrieb Las Palmas - 60 km weg).
 //
-// Mit einem KOMMA vor dem Ort liest Booking den Teil dahinter als Ortsangabe.
-// Findet der Parser das Haus, landet man darauf. Findet er es nicht, faellt er
-// auf die Stadt zurueck und zeigt eine volle Liste am richtigen Ort. Also
-// schlimmstenfalls die richtige Stadt statt einer leeren Seite.
+// Der Name ist die zuverlaessige Information, der Ort die unzuverlaessige.
+// Deshalb sucht der Link nur nach dem Namen. Ein eigenstaendiger Hotelname
+// loest bei Booking in aller Regel sauber auf und kann sich nicht selbst
+// widersprechen. Der Ort kommt separat ueber den Regions-Link darunter.
 //
-// Der Name wird vorher gekuerzt: Marketingzusaetze nach Komma oder Gedankenstrich
-// ("Blue Palace, a Luxury Collection Resort & Spa") verwirren den Parser.
+// Ausnahme: Besteht der Name nach dem Kuerzen nur aus einem Wort, ist er zu
+// mehrdeutig - dann hilft der Ort mehr als er schadet.
 function hotelSuchbegriff(name, ort) {
   var n = (name || "")
     .split(",")[0]
@@ -171,9 +173,13 @@ function hotelSuchbegriff(name, ort) {
     .replace(/\s+/g, " ")
     .trim();
   var teile = n.split(" ");
-  if (teile.length > 6) n = teile.slice(0, 6).join(" ");
+  if (teile.length > 6) {
+    n = teile.slice(0, 6).join(" ");
+    teile = n.split(" ");
+  }
   if (!n) return ort || "";
-  return ort ? n + ", " + ort : n;
+  if (teile.length < 2 && ort) return n + ", " + ort;
+  return n;
 }
 
 function searchUrl(params) {
@@ -271,7 +277,10 @@ function AIChat() {
       "Also: Name ganz vorne, dann der Ort in runden Klammern, dann ein Gedankenstrich, " +
       "dann die Begruendung. Die Seite liest daraus die Buchungslinks - ohne dieses Format " +
       "bekommt der Nutzer zu deinen Empfehlungen keine Links.\n" +
-      "Benutze die Klammer-Schreibweise NUR fuer Unterkuenfte, niemals in normalen Saetzen.\n\n" +
+      "Benutze die Klammer-Schreibweise NUR fuer Unterkuenfte, niemals in normalen Saetzen.\n" +
+      "Der Ort in der Klammer muss der Ort sein, an dem das Haus wirklich steht. Bist du " +
+      "dir beim genauen Ort nicht sicher, schreibe lieber die groessere Region oder Insel " +
+      "hinein. Eine falsche Stadt ist schlimmer als eine ungenaue Region.\n\n" +
       "Schreibe ganz am Schluss, in einer eigenen letzten Zeile, die Zielregion als Marker:\n" +
       "[SUCHE: Stadt oder Insel]\n\n" +
       "REGELN:\n" +

@@ -233,19 +233,23 @@ function AIChat() {
       "Nur wenn ueberhaupt kein Ziel und keine Richtung erkennbar ist, stelle EINE kurze " +
       "Rueckfrage mit 2-3 konkreten Vorschlaegen. Hoechstens einmal im ganzen Gespraech - " +
       "hast du schon einmal gefragt, wird jetzt empfohlen.\n\n" +
-      "Empfiehl echte, existierende Haeuser mit je einem Satz, warum sie passen (Lage, " +
-      "Stil, Umgebung). Erfinde keine Namen. Passe die Art der Unterkunft dem Wunsch an - " +
-      "wer ein Apartment sucht, bekommt Apartments und Aparthotels, kein Grandhotel.\n\n" +
-      "GANZ AM ENDE, nach dem sichtbaren Text, gib fuer JEDE empfohlene Unterkunft eine " +
-      "Zeile in exakt diesem Format aus (der Nutzer sieht diese Zeilen nicht):\n" +
-      "[HOTEL: Exakter Name | Stadt oder Ort]\n" +
-      "Danach eine Zeile fuer die Zielregion:\n" +
+      "Empfiehl echte, existierende Haeuser. Erfinde keine Namen. Passe die Art der " +
+      "Unterkunft dem Wunsch an - wer ein Apartment sucht, bekommt Apartments und " +
+      "Aparthotels, kein Grandhotel.\n\n" +
+      "FORMAT DER EMPFEHLUNGEN - das ist wichtig:\n" +
+      "Schreibe jede Unterkunft als eigenen Absatz, immer genau so:\n" +
+      "Name der Unterkunft (Ort) - ein Satz, warum sie passt\n\n" +
+      "Also: Name ganz vorne, dann der Ort in runden Klammern, dann ein Gedankenstrich, " +
+      "dann die Begruendung. Die Seite liest daraus die Buchungslinks - ohne dieses Format " +
+      "bekommt der Nutzer zu deinen Empfehlungen keine Links.\n" +
+      "Benutze die Klammer-Schreibweise NUR fuer Unterkuenfte, niemals in normalen Saetzen.\n\n" +
+      "Schreibe ganz am Schluss, in einer eigenen letzten Zeile, die Zielregion als Marker:\n" +
       "[SUCHE: Stadt oder Insel]\n\n" +
       "REGELN:\n" +
       "- Erfinde niemals Preise, Sterne oder Bewertungszahlen und nenne keine konkreten Preise.\n" +
       "- Schreibe im sichtbaren Text niemals selbst Links oder booking.com-Adressen.\n" +
       "- Vertroeste nicht ('ich suche gleich...') - deine Empfehlung steht sofort hier.\n" +
-      "- Halte den sichtbaren Text angenehm knapp: kurze Einleitung, dann die Haeuser mit je einem Satz.";
+      "- Halte den Text knapp: kurze Einleitung, dann die Haeuser mit je einem Satz.";
 
     try {
       var res = await fetch("/api/chat", {
@@ -253,7 +257,7 @@ function AIChat() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "claude-sonnet-5",
-          max_tokens: 700,
+          max_tokens: 800,
           system: system,
           messages: verlauf
         })
@@ -267,36 +271,50 @@ function AIChat() {
         .join("\n")
         .trim();
 
-      // Jedes [HOTEL: Name | Stadt] wird zu einer getrackten Booking-Suche
-      // nach genau diesem Haus. Kein Haus wird bevorzugt.
+      // Zuerst den sichtbaren Text herstellen - genau das, was der Nutzer liest.
+      // Daraus werden dann die Hotelnamen gelesen.
+      var text = stripMarkers(roh);
+
+      // Hotels aus dem sichtbaren Text lesen. Sonnet schreibt jede Empfehlung
+      // als "Name (Ort) - Begruendung". Dieses Muster ist Teil der Antwort
+      // selbst und kann deshalb nicht vergessen werden - anders als die
+      // frueheren versteckten [HOTEL:]-Marker, die Sonnet oft weggelassen hat.
+      //
+      // Der Gedankenstrich direkt hinter der Klammer ist die entscheidende
+      // Bedingung. Ein normaler Satz wie
+      //   "Falls dir eine andere Insel (z. B. Santorin, Kos) lieber ist, ..."
+      // hat zwar eine Klammer, danach folgt aber kein Strich - also kein Treffer.
+      var HOTELZEILE = /^\s*(?:[-*\u2022]|\d+[.)])?\s*([^()\n]{3,80}?)\s*\(([^)\n]{2,40})\)\s*[-\u2013\u2014]\s+\S/;
       var seen = {};
       var liste = [];
-      var re = /\[HOTEL:\s*([^|\]]+)\|\s*([^\]]+)\]/gi;
-      var mm;
-      while ((mm = re.exec(roh)) !== null) {
-        var name = mm[1].trim();
-        var stadt = mm[2].trim();
+      text.split("\n").forEach(function(zeile) {
+        var m = zeile.match(HOTELZEILE);
+        if (!m) return;
+        var name = m[1].trim();
+        var stadt = m[2].trim();
+        // Ein Hotelname ist kein ganzer Satz und faengt gross an.
+        if (name.indexOf(". ") !== -1) return;
+        if (!/^[A-Z0-9ÄÖÜ]/.test(name)) return;
         var key = (name + "|" + stadt).toLowerCase();
-        if (!name || seen[key]) continue;
+        if (seen[key]) return;
         seen[key] = 1;
         var suchbegriff = (name + " " + stadt).replace(/,/g, " ").replace(/\s+/g, " ").trim();
         liste.push({ name: name, stadt: stadt, url: searchUrl({ ort: suchbegriff }) });
-      }
+      });
       setEmpfehlungen(liste.slice(0, 5));
 
-      // Zusaetzlich eine Suche ueber den ganzen Zielort als Absicherung.
+      // Sammel-Link ueber die ganze Zielregion. Fehlt der Marker, wird der Ort
+      // des ersten gefundenen Hauses genommen - so gibt es immer einen Link,
+      // der funktioniert.
       var mSuche = roh.match(/\[SUCHE:\s*([^\]]+)\]/i);
-      if (mSuche) {
-        var ort = mSuche[1].replace(/,.*$/, "").trim();
-        if (ort) setSearchLink({ url: searchUrl({ ort: ort }), ort: ort });
-      }
+      var ort = mSuche ? mSuche[1].replace(/,.*$/, "").trim() : "";
+      if (!ort && liste.length) ort = liste[0].stadt;
+      if (ort) setSearchLink({ url: searchUrl({ ort: ort }), ort: ort });
 
-      // Der sichtbare Text ist Sonnets Antwort ohne die technischen Marker.
       // Nur wenn wirklich nichts uebrig bleibt, gibt es einen Ersatztext -
-      // und der wird NICHT in den Verlauf uebernommen (Flag ausserhalb),
-      // sonst haelt Sonnet ihn beim naechsten Mal fuer seine eigene Frage
-      // und stellt endlos Rueckfragen.
-      var text = stripMarkers(roh);
+      // und der wird NICHT in den Verlauf uebernommen (Flag ersatz), sonst
+      // haelt Sonnet ihn beim naechsten Mal fuer seine eigene Frage und
+      // stellt endlos Rueckfragen.
       var istErsatz = false;
       if (!text) {
         text = liste.length

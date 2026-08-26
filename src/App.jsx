@@ -4,17 +4,17 @@ const HOTELS = [
   { id: 1, name: "Mont Cervin Palace", preisIntern: 320, city: "Zermatt", country: "Schweiz", img: "https://images.unsplash.com/photo-1640535092591-b9c35f4b138f?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Berge", "Luxus"], lastMinute: true, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/ch/mont-cervin-palace.de.html" },
   { id: 2, name: "25hours Hotel Bikini Berlin", preisIntern: 119, city: "Berlin", country: "Deutschland", img: "https://images.unsplash.com/photo-1585405327087-ccddc9329fa5?w=800&q=80&auto=format&fit=crop", tags: ["Nomad", "Design", "Zentral"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/de/25hours-bikini-berlin.de.html" },
   { id: 3, name: "Hotel Negresco", preisIntern: 280, city: "Nizza", country: "Frankreich", img: "https://images.unsplash.com/photo-1491166617655-0723a0999cfc?w=800&q=80&auto=format&fit=crop", tags: ["Meer", "Luxus", "Historisch"], lastMinute: true, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/fr/negresco.de.html" },
-  { id: 4, name: "25hours Hotel MuseumsQuartier", preisIntern: 89, city: "Wien", country: "Oesterreich", img: "https://images.unsplash.com/photo-1646491311728-f4a676e5f17d?w=800&q=80&auto=format&fit=crop", tags: ["Nomad", "Design", "Zentral"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/at/25hours-wien.de.html" },
+  { id: 4, name: "25hours Hotel MuseumsQuartier", preisIntern: 89, city: "Wien", country: "Österreich", img: "https://images.unsplash.com/photo-1646491311728-f4a676e5f17d?w=800&q=80&auto=format&fit=crop", tags: ["Nomad", "Design", "Zentral"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/at/25hours-wien.de.html" },
   { id: 5, name: "Gritti Palace Venice", preisIntern: 650, city: "Venedig", country: "Italien", img: "https://images.unsplash.com/photo-1558271736-cd043ef2e855?w=800&q=80&auto=format&fit=crop", tags: ["Luxus", "Romantik", "Historisch"], lastMinute: true, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/it/gritti-palace.de.html" },
   { id: 6, name: "Dollenberg Relais & Chateaux", preisIntern: 195, city: "Bad Peterstal", country: "Deutschland", img: "https://images.unsplash.com/photo-1720951901235-8d865c940454?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Spa", "Natur"], lastMinute: true, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/de/dollenberg.de.html" },
   { id: 7, name: "Casa Camper Barcelona", preisIntern: 145, city: "Barcelona", country: "Spanien", img: "https://images.unsplash.com/photo-1578095172812-dcc191c5aed8?w=800&q=80&auto=format&fit=crop", tags: ["Design", "Nomad", "Zentral"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/es/casa-camper.de.html" },
-  { id: 8, name: "Interalpen-Hotel Tyrol", preisIntern: 280, city: "Telfs", country: "Oesterreich", img: "https://images.unsplash.com/photo-1607453813894-21f7b5cf201a?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Spa", "Berge"], lastMinute: true, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/at/interalpen-tyrol.de.html" },
-  { id: 9, name: "Hotel Sacher Wien", city: "Wien", country: "Oesterreich", img: "https://upload.wikimedia.org/wikipedia/commons/5/5a/Hotel_Sacher_Vienna_065.jpg", tags: ["Luxus", "Historisch", "Zentral"], lastMinute: false, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/at/sacher-wien.de.html" },
-  { id: 10, name: "Boutiquehotel Stadthalle by Cocoon", city: "Wien", country: "Oesterreich", img: "https://images.unsplash.com/photo-1780283574760-e8d7fd944da5?w=800&q=80&auto=format&fit=crop", tags: ["Design", "Nachhaltig", "Garten"], lastMinute: false, nomad: false, cat: "design", url: "https://www.booking.com/hotel/at/boutique-stadthalle.de.html" },
+  { id: 8, name: "Interalpen-Hotel Tyrol", preisIntern: 280, city: "Telfs", country: "Österreich", img: "https://images.unsplash.com/photo-1607453813894-21f7b5cf201a?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Spa", "Berge"], lastMinute: true, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/at/interalpen-tyrol.de.html" },
+  { id: 9, name: "Hotel Sacher Wien", city: "Wien", country: "Österreich", img: "https://upload.wikimedia.org/wikipedia/commons/5/5a/Hotel_Sacher_Vienna_065.jpg", tags: ["Luxus", "Historisch", "Zentral"], lastMinute: false, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/at/sacher-wien.de.html" },
+  { id: 10, name: "Boutiquehotel Stadthalle by Cocoon", city: "Wien", country: "Österreich", img: "https://images.unsplash.com/photo-1780283574760-e8d7fd944da5?w=800&q=80&auto=format&fit=crop", tags: ["Design", "Nachhaltig", "Garten"], lastMinute: false, nomad: false, cat: "design", url: "https://www.booking.com/hotel/at/boutique-stadthalle.de.html" },
   { id: 11, name: "Schgaguler Hotel", city: "Kastelruth", country: "Italien", img: "https://images.unsplash.com/photo-1774017092224-54c07e928a39?w=800&q=80&auto=format&fit=crop", tags: ["Design", "Wellness", "Dolomiten"], lastMinute: false, nomad: false, cat: "design", url: "https://www.booking.com/hotel/it/wellness-residence-schgaguler.de.html" },
   { id: 12, name: "Ushuaïa Ibiza Beach Hotel", city: "Ibiza", country: "Spanien", img: "https://images.unsplash.com/photo-1661416328081-27cd58c4beed?w=800&q=80&auto=format&fit=crop", tags: ["Design", "Strand", "Nightlife"], lastMinute: false, nomad: false, cat: "design", url: "https://www.booking.com/hotel/es/ushuaia-illes-balears1.de.html" },
   { id: 13, name: "STRAF, Milan, a Member of Design Hotels", city: "Mailand", country: "Italien", img: "https://images.unsplash.com/photo-1780689436914-2e87323985e9?w=800&q=80&auto=format&fit=crop", tags: ["Design", "Zentral", "Boutique"], lastMinute: false, nomad: false, cat: "design", url: "https://www.booking.com/hotel/it/straf.de.html" },
-  { id: 14, name: "Design Hotel Miramonte", city: "Bad Gastein", country: "Oesterreich", img: "https://images.unsplash.com/photo-1756765261596-60e8c9074216?w=800&q=80&auto=format&fit=crop", tags: ["Design", "Spa", "Berge"], lastMinute: false, nomad: false, cat: "design", url: "https://www.booking.com/hotel/at/miramonte.de.html" },
+  { id: 14, name: "Design Hotel Miramonte", city: "Bad Gastein", country: "Österreich", img: "https://images.unsplash.com/photo-1756765261596-60e8c9074216?w=800&q=80&auto=format&fit=crop", tags: ["Design", "Spa", "Berge"], lastMinute: false, nomad: false, cat: "design", url: "https://www.booking.com/hotel/at/miramonte.de.html" },
   { id: 15, name: "Hotel Belvedere Locarno", city: "Locarno", country: "Schweiz", img: "https://images.unsplash.com/photo-1540737042062-a17a71602964?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "See", "Panorama"], lastMinute: false, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/ch/belvedere-locarno-sa.de.html" },
   { id: 16, name: "Vier Jahreszeiten Kempinski München", city: "München", country: "Deutschland", img: "https://images.unsplash.com/photo-1741120026139-8ae0036ebe6d?w=800&q=80&auto=format&fit=crop", tags: ["Luxus", "Historisch", "Zentral"], lastMinute: false, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/de/hotelvierjahreszeitenkempinskimunchen.de.html" },
   { id: 17, name: "Lone Hotel by Maistra Collection", city: "Rovinj", country: "Kroatien", img: "https://images.unsplash.com/photo-1726520228793-31b5be245b47?w=800&q=80&auto=format&fit=crop", tags: ["Design", "Meer", "Wald"], lastMinute: false, nomad: false, cat: "design", url: "https://www.booking.com/hotel/hr/lone.de.html" },
@@ -49,7 +49,7 @@ const HOTELS = [
   { id: 46, name: "Mykonos Blu, A Grecotel Resort", city: "Mykonos", country: "Griechenland", img: "https://images.unsplash.com/photo-1783970864506-febcad751556?w=800&q=80&auto=format&fit=crop", tags: ["Luxus", "Strand", "Meerblick"], lastMinute: false, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/gr/grecotel-mykonos-blu.de.html" },
   { id: 47, name: "The Social Hub Rotterdam", city: "Rotterdam", country: "Niederlande", img: "https://images.unsplash.com/photo-1776179343076-236a5893ec3e?w=800&q=80&auto=format&fit=crop", tags: ["Nomad", "Coworking", "Design"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/nl/the-social-hub-rotterdam.de.html" },
   { id: 48, name: "Brenners Park-Hotel & Spa", city: "Baden-Baden", country: "Deutschland", img: "https://images.unsplash.com/photo-1678960591129-ff8db00462e2?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Spa", "Historisch"], lastMinute: false, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/de/brennersparkhotelspa.de.html" },
-  { id: 49, name: "Hotel Sacher Salzburg", city: "Salzburg", country: "Oesterreich", img: "https://images.unsplash.com/photo-1760456309029-dedb5c3b19df?w=800&q=80&auto=format&fit=crop", tags: ["Luxus", "Historisch", "Zentral"], lastMinute: false, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/at/hotelsachersalzburg.de.html" },
+  { id: 49, name: "Hotel Sacher Salzburg", city: "Salzburg", country: "Österreich", img: "https://images.unsplash.com/photo-1760456309029-dedb5c3b19df?w=800&q=80&auto=format&fit=crop", tags: ["Luxus", "Historisch", "Zentral"], lastMinute: false, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/at/hotelsachersalzburg.de.html" },
   { id: 50, name: "Badrutt's Palace Hotel", city: "St. Moritz", country: "Schweiz", img: "https://images.unsplash.com/photo-1601660803615-4e5bbb72596f?w=800&q=80&auto=format&fit=crop", tags: ["Luxus", "Berge", "Historisch"], lastMinute: false, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/ch/badrutt-s-palace-st-moritz.de.html" },
   { id: 51, name: "Bürgenstock Hotel & Alpine Spa", city: "Bürgenstock", country: "Schweiz", img: "https://images.unsplash.com/photo-1651822009112-c9a1a8d34a7f?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Spa", "See"], lastMinute: false, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/ch/burgenstock-hotels-ag.de.html" },
   { id: 52, name: "Grand Hotel Tremezzo", city: "Tremezzo", country: "Italien", img: "https://images.unsplash.com/photo-1606745463199-d7623eee5f8a?w=800&q=80&auto=format&fit=crop", tags: ["Luxus", "See", "Panorama"], lastMinute: false, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/it/grandhoteltremezzopalace.de.html" },
@@ -58,7 +58,7 @@ const HOTELS = [
   { id: 55, name: "Airelles Château de la Messardière", city: "Saint-Tropez", country: "Frankreich", img: "https://images.unsplash.com/photo-1703152792682-a1fe5f3dedb4?w=800&q=80&auto=format&fit=crop", tags: ["Luxus", "Meerblick", "Historisch"], lastMinute: false, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/fr/chateau-de-la-messardiere.de.html" },
   { id: 56, name: "Grand Hotel Heiligendamm", city: "Heiligendamm", country: "Deutschland", img: "https://images.unsplash.com/photo-1669988022723-270ef6f613bb?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Spa", "Strand"], lastMinute: false, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/de/grand-hotel-heiligendamm.de.html" },
   { id: 57, name: "Kempinski Hotel Adriatic Istria Croatia", city: "Savudrija", country: "Kroatien", img: "https://images.unsplash.com/photo-1604696896158-33aa56a7d352?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Golf", "Meer"], lastMinute: false, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/hr/kempinski-adriatic-istria-croatia.de.html" },
-  { id: 58, name: "Falkensteiner Schlosshotel Velden", city: "Velden am Wörthersee", country: "Oesterreich", img: "https://images.unsplash.com/photo-1748375748328-d9e30a0adc02?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Spa", "See"], lastMinute: false, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/at/falkensteiner-schlosshotel-velden.de.html" },
+  { id: 58, name: "Falkensteiner Schlosshotel Velden", city: "Velden am Wörthersee", country: "Österreich", img: "https://images.unsplash.com/photo-1748375748328-d9e30a0adc02?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Spa", "See"], lastMinute: false, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/at/falkensteiner-schlosshotel-velden.de.html" },
 ];
 
 const ACCENT = "#C9960C";
@@ -262,7 +262,7 @@ function HotelCard({ hotel, highlight }) {
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
           {hotel.tags.map(function(t) { return <span key={t} style={{ background: ACCENT_LIGHT, color: ACCENT, padding: "3px 9px", borderRadius: 8, fontSize: 11, fontFamily: "Inter, sans-serif", fontWeight: 500 }}>{t}</span>; })}
         </div>
-        <a href={url} target="_blank" rel="noopener noreferrer" className="btn-gold" style={{ display: "block", textAlign: "center", padding: "11px 18px", fontSize: 13 }}>Preis &amp; Verfuegbarkeit →</a>
+        <a href={url} target="_blank" rel="noopener noreferrer" className="btn-gold" style={{ display: "block", textAlign: "center", padding: "11px 18px", fontSize: 13 }}>Preis &amp; Verfügbarkeit →</a>
       </div>
     </div>
   );
@@ -422,7 +422,7 @@ function AIChat() {
     setLoading(false);
   };
 
-  var hints = ["Spa-Hotel Tirol", "Boutique Hotel Lissabon", "Strandurlaub Griechenland", "Staedtetrip Kopenhagen"];
+  var hints = ["Spa-Hotel Tirol", "Boutique Hotel Lissabon", "Strandurlaub Griechenland", "Städtetrip Kopenhagen"];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
@@ -464,15 +464,15 @@ function AIChat() {
         {searchLink && !loading && (
           <a href={searchLink.url} target="_blank" rel="noopener noreferrer" style={{ display: "block", marginTop: 6, background: ACCENT_LIGHT, border: "1px solid #e9d06a", borderRadius: 14, padding: 16, textDecoration: "none" }}>
             <div style={{ fontSize: 11, color: ACCENT, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>Mehr Auswahl</div>
-            <div style={{ fontSize: 15, color: TEXT, fontWeight: 600, marginBottom: 4 }}>Alle Unterkuenfte in {searchLink.ort}</div>
-            <div style={{ fontSize: 12, color: GRAY }}>Live-Preise und Verfuegbarkeit ansehen →</div>
+            <div style={{ fontSize: 15, color: TEXT, fontWeight: 600, marginBottom: 4 }}>Alle Unterkünfte in {searchLink.ort}</div>
+            <div style={{ fontSize: 12, color: GRAY }}>Live-Preise und Verfügbarkeit ansehen →</div>
           </a>
         )}
         <div ref={bottomRef} />
       </div>
       <div style={{ padding: "14px 20px", borderTop: "1px solid " + BORDER, background: "#fff" }}>
         <div style={{ display: "flex", gap: 8 }}>
-          <input value={input} onChange={function(e) { setInput(e.target.value); }} onKeyDown={function(e) { if (e.key === "Enter") send(); }} placeholder="z.B. Wellness Hotel in den Alpen fuer 2 Naechte" style={{ flex: 1, background: "#f9fafb", border: "1px solid " + BORDER, borderRadius: 10, padding: "11px 14px", color: TEXT, fontSize: 14, outline: "none", fontFamily: "Inter, sans-serif" }} />
+          <input value={input} onChange={function(e) { setInput(e.target.value); }} onKeyDown={function(e) { if (e.key === "Enter") send(); }} placeholder="z.B. Wellness Hotel in den Alpen für 2 Nächte" style={{ flex: 1, background: "#f9fafb", border: "1px solid " + BORDER, borderRadius: 10, padding: "11px 14px", color: TEXT, fontSize: 14, outline: "none", fontFamily: "Inter, sans-serif" }} />
           <button onClick={send} disabled={loading || !input.trim()} className="btn-gold" style={{ fontSize: 18, padding: "11px 18px" }}>Senden</button>
         </div>
         <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -516,7 +516,7 @@ function TaeglicheListe({ typ }) {
   if (hotels.length === 0) {
     return (
       <div style={{ textAlign: "center", padding: "36px 24px", background: "#f9fafb", border: "1px solid " + BORDER, borderRadius: 16, color: GRAY, fontSize: 14 }}>
-        Die aktuelle Auswahl ist gerade nicht verfuegbar. Schau spaeter nochmal vorbei oder nutze den KI-Berater.
+        Die aktuelle Auswahl ist gerade nicht verfügbar. Schau später nochmal vorbei oder nutze den KI-Berater.
       </div>
     );
   }
@@ -561,8 +561,8 @@ function TaeglicheListe({ typ }) {
 
       {z.checkin && (
         <div style={{ textAlign: "center", marginTop: 18, fontSize: 12, color: GRAY, lineHeight: 1.6 }}>
-          Preise werden fuer {z.checkin.split("-").reverse().join(".")} bis {z.checkout.split("-").reverse().join(".")} angezeigt.<br />
-          Aktuelle Verfuegbarkeit und Preis siehst du bei Booking.com.
+          Preise werden für {z.checkin.split("-").reverse().join(".")} bis {z.checkout.split("-").reverse().join(".")} angezeigt.<br />
+          Aktuelle Verfügbarkeit und Preis siehst du bei Booking.com.
         </div>
       )}
     </div>
@@ -659,7 +659,7 @@ export default function App() {
             </div>
           </div>
           <div className="stats">
-            {[[String(HOTELS.length),"Kuratierte Hotels"],["2 Mio+","Unterkuenfte"],["Taeglich","Neue Auswahl"],["100%","Kostenlos"]].map(function(item) {
+            {[[String(HOTELS.length),"Kuratierte Hotels"],["2 Mio+","Unterkünfte"],["Täglich","Neue Auswahl"],["100%","Kostenlos"]].map(function(item) {
               return <div key={item[1]} className="stat">
                 <div className="stat-n">{item[0]}</div>
                 <div className="stat-l">{item[1]}</div>
@@ -712,7 +712,7 @@ export default function App() {
             <p style={{ color: GRAY, marginTop: 10, fontSize: 16 }}>Gigabit WLAN - Coworking - Dedizierte Arbeitsbereiche</p>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px,1fr))", gap: 20, marginBottom: 40, background: "#f9fafb", borderRadius: 16, padding: 28, border: "1px solid " + BORDER }} className="nomad-features">
-            {[["WLAN","Gigabit WLAN","Schnelles Internet ueberall"],["Desk","Coworking","Professionelle Arbeitsbereiche"],["Globe","Top-Staedte","Hotels in Europa und weltweit"]].map(function(item) {
+            {[["WLAN","Gigabit WLAN","Schnelles Internet überall"],["Desk","Coworking","Professionelle Arbeitsbereiche"],["Globe","Top-Städte","Hotels in Europa und weltweit"]].map(function(item) {
               return <div key={item[1]} style={{ textAlign: "center", padding: 16 }}>
                 <div style={{ fontSize: 32, marginBottom: 10 }}>{item[0]}</div>
                 <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 5 }}>{item[1]}</div>

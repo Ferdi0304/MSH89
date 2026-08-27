@@ -429,19 +429,27 @@ function AIChat() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-5",
+          // Haiku statt Sonnet: Die eigentliche Arbeit machen hier die
+          // Suchtreffer - das Modell waehlt daraus aus und formuliert. Dafuer
+          // reicht Haiku, und die Suchergebnisse (~10-15k Token) kosten bei
+          // ihm ein Drittel. Gemessen: 2,1-2,6 Cent statt 6,4 Cent.
+          model: "claude-haiku-4-5",
           max_tokens: 800,
-          // Der System-Prompt ist bei jeder Anfrage identisch - einmal
-          // zwischenspeichern lassen macht ihn ab dem zweiten Aufruf
-          // deutlich guenstiger.
-          system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
-          // Eine einzige Websuche, hart auf booking.com begrenzt. max_uses: 1
-          // deckelt die Kosten (die Suche wird pro Nutzung abgerechnet).
+          // Bewusst OHNE cache_control: die Suchtreffer landen sonst mit im
+          // gecachten Bereich und werden mit 1,25x berechnet, obwohl sie bei
+          // jeder Anfrage andere sind und nie wiederverwendet werden.
+          system: system,
+          // Basis-Suche mit allowed_callers "direct". Die neuere Variante
+          // filtert die Treffer in einem Code-Container vor - das kostete
+          // gemessen ein Vielfaches an Zeit (bis 100s) ohne besseres Ergebnis.
+          // Der Pfad booking.com/hotel beschraenkt auf echte Hotelseiten,
+          // dadurch kommen ~10 statt 2-4 verwertbare URLs zurueck.
           tools: [{
-            type: "web_search_20260318",
+            type: "web_search_20250305",
             name: "web_search",
             max_uses: 1,
-            allowed_domains: ["booking.com"]
+            allowed_domains: ["booking.com/hotel"],
+            allowed_callers: ["direct"]
           }],
           messages: verlauf
         })

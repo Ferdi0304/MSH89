@@ -232,6 +232,66 @@ function hotelSuchbegriff(name, ort) {
   return n;
 }
 
+// --- Echte Booking-Links aus der Websuche ---------------------------------
+//
+// Sonnet sucht pro Anfrage einmal auf booking.com. Die gefundenen Treffer
+// stehen strukturiert in der API-Antwort. Wir lesen die URL NICHT aus dem
+// sichtbaren Text (den koennte Sonnet falsch abtippen), sondern direkt aus
+// diesen Datenblocken - dadurch zeigt der Link auf eine echte, existierende
+// Hotelseite statt auf eine geratene.
+
+var BOOKING_HOTELSEITE = /^https?:\/\/(www\.)?booking\.com\/hotel\/[a-z]{2}\//i;
+
+function normalisiere(s) {
+  return (s || "")
+    .toLowerCase()
+    .replace(/ä/g, "a").replace(/ö/g, "o").replace(/ü/g, "u").replace(/ß/g, "ss")
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+// Sammelt alle Websuche-Treffer aus der Antwort. Rekursiv, weil die Treffer
+// je nach Filterung direkt oder verschachtelt in Code-Execution-Bloecken
+// stehen koennen.
+function sammleSuchtreffer(knoten, raus) {
+  if (!knoten || typeof knoten !== "object") return raus;
+  if (Array.isArray(knoten)) {
+    knoten.forEach(function (k) { sammleSuchtreffer(k, raus); });
+    return raus;
+  }
+  if (knoten.type === "web_search_result" && typeof knoten.url === "string") {
+    var url = knoten.url.split("?")[0];
+    if (BOOKING_HOTELSEITE.test(url)) {
+      raus.push({ url: url, titel: String(knoten.title || "") });
+    }
+  }
+  Object.keys(knoten).forEach(function (k) {
+    if (knoten[k] && typeof knoten[k] === "object") sammleSuchtreffer(knoten[k], raus);
+  });
+  return raus;
+}
+
+// Ordnet einen von Sonnet genannten Hotelnamen einem echten Suchtreffer zu.
+// Verglichen wird gegen Titel UND URL-Slug. Es zaehlt, wie viele Wortteile
+// des Namens vorkommen; unter zwei Dritteln gilt es als kein Treffer -
+// lieber die alte Namenssuche als ein falsches Hotel.
+function findeHotelUrl(name, treffer) {
+  var worte = normalisiere(name).split(" ").filter(function (w) { return w.length > 2; });
+  if (!worte.length || !treffer.length) return null;
+
+  var bester = null;
+  var besterWert = 0;
+  treffer.forEach(function (t) {
+    var heu = normalisiere(t.titel + " " + t.url.replace(/[\/.\-]/g, " "));
+    var sitzt = worte.filter(function (w) { return heu.indexOf(w) !== -1; }).length;
+    var wert = sitzt / worte.length;
+    if (wert > besterWert) { besterWert = wert; bester = t; }
+  });
+
+  return besterWert >= 0.67 && bester ? bester.url : null;
+}
+
 function searchUrl(params) {
   var q = params.ort || "";
   var u = "https://www.booking.com/searchresults.de.html?ss=" + encodeURIComponent(q);
@@ -318,6 +378,15 @@ function AIChat() {
       "Nur wenn ueberhaupt kein Ziel und keine Richtung erkennbar ist, stelle EINE kurze " +
       "Rueckfrage mit 2-3 konkreten Vorschlaegen. Hoechstens einmal im ganzen Gespraech - " +
       "hast du schon einmal gefragt, wird jetzt empfohlen.\n\n" +
+      "SO ARBEITEST DU: Du hast eine Websuche, die ausschliesslich auf booking.com " +
+      "sucht. Mache pro Antwort GENAU EINE Suche, und formuliere sie breit genug, " +
+      "dass sie mehrere passende Haeuser auf einmal findet (z.B. 'Wellnesshotel Tirol' " +
+      "oder 'Boutiquehotel Lissabon Altstadt') - nicht nach einem einzelnen Hotelnamen. " +
+      "Empfiehl danach nur Haeuser, die in den echten Suchtreffern vorkommen, und " +
+      "schreibe ihren Namen genau so, wie er dort steht. So bekommt der Nutzer einen " +
+      "Link auf die richtige Hotelseite.\n\n" +
+      "Findet die Suche zu wenig Passendes, ergaenze aus deinem eigenen Wissen - sag " +
+      "das aber nicht dazu und bleibe im gleichen Format.\n\n" +
       "Empfiehl echte, existierende Haeuser. Erfinde keine Namen. Passe die Art der " +
       "Unterkunft dem Wunsch an - wer ein Apartment sucht, bekommt Apartments und " +
       "Aparthotels, kein Grandhotel.\n\n" +
@@ -362,7 +431,18 @@ function AIChat() {
         body: JSON.stringify({
           model: "claude-sonnet-5",
           max_tokens: 800,
-          system: system,
+          // Der System-Prompt ist bei jeder Anfrage identisch - einmal
+          // zwischenspeichern lassen macht ihn ab dem zweiten Aufruf
+          // deutlich guenstiger.
+          system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
+          // Eine einzige Websuche, hart auf booking.com begrenzt. max_uses: 1
+          // deckelt die Kosten (die Suche wird pro Nutzung abgerechnet).
+          tools: [{
+            type: "web_search_20260318",
+            name: "web_search",
+            max_uses: 1,
+            allowed_domains: ["booking.com"]
+          }],
           messages: verlauf
         })
       });
@@ -378,6 +458,10 @@ function AIChat() {
       // Zuerst den sichtbaren Text herstellen - genau das, was der Nutzer liest.
       // Daraus werden dann die Hotelnamen gelesen.
       var text = stripMarkers(roh);
+
+      // Die echten Booking-Hotelseiten aus der Websuche. Daraus bekommen die
+      // Empfehlungen gleich ihre Links.
+      var suchtreffer = sammleSuchtreffer(data.content, []);
 
       // Hotels aus dem sichtbaren Text lesen. Sonnet schreibt jede Empfehlung
       // als "Name (Ort) - Begruendung". Dieses Muster ist Teil der Antwort
@@ -402,8 +486,15 @@ function AIChat() {
         var key = (name + "|" + stadt).toLowerCase();
         if (seen[key]) return;
         seen[key] = 1;
-        var suchbegriff = hotelSuchbegriff(name, stadt);
-        liste.push({ name: name, stadt: stadt, url: searchUrl({ ort: suchbegriff }) });
+        // Erst die echte Hotelseite aus der Websuche versuchen. Nur wenn dort
+        // nichts sicher zuzuordnen ist, die alte Namenssuche als Rueckfallebene -
+        // die landet immer auf einer echten Trefferseite, nur nicht garantiert
+        // auf genau diesem Haus.
+        var echteUrl = findeHotelUrl(name, suchtreffer);
+        var url = echteUrl
+          ? track(echteUrl)
+          : searchUrl({ ort: hotelSuchbegriff(name, stadt) });
+        liste.push({ name: name, stadt: stadt, url: url });
       });
       setEmpfehlungen(liste.slice(0, 5));
 

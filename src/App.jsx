@@ -272,7 +272,17 @@ function sammleSuchtreffer(knoten, raus) {
   return raus;
 }
 
-// Ordnet einen von Sonnet genannten Hotelnamen einem echten Suchtreffer zu.
+// Booking fuehrt Haeuser oft mit Sterne-Zusatz im Titel ("Hotel X - 4 Sterne
+// Superior"). Der gehoert nicht in die Anzeige: Sternebewertungen zeigen wir
+// bewusst nicht selbst an. Ausserdem stoert der Zusatz die Namenszuordnung.
+function saeubereName(name) {
+  return (name || "")
+    .replace(/\s*[,\-–—]?\s*\d\s*[-\s]?Sterne(?:\s+Superior)?\b.*$/i, "")
+    .replace(/\s*[,\-–—]\s*$/, "")
+    .trim();
+}
+
+// Ordnet einen genannten Hotelnamen einem echten Suchtreffer zu.
 // Verglichen wird gegen Titel UND URL-Slug. Es zaehlt, wie viele Wortteile
 // des Namens vorkommen; unter zwei Dritteln gilt es als kein Treffer -
 // lieber die alte Namenssuche als ein falsches Hotel.
@@ -385,8 +395,11 @@ function AIChat() {
       "Empfiehl danach nur Haeuser, die in den echten Suchtreffern vorkommen, und " +
       "schreibe ihren Namen genau so, wie er dort steht. So bekommt der Nutzer einen " +
       "Link auf die richtige Hotelseite.\n\n" +
-      "Findet die Suche zu wenig Passendes, ergaenze aus deinem eigenen Wissen - sag " +
-      "das aber nicht dazu und bleibe im gleichen Format.\n\n" +
+      "Empfiehl AUSSCHLIESSLICH Haeuser, die in den Suchtreffern stehen. Findest du " +
+      "dort nur zwei passende oder nur eines, dann empfiehl eben nur diese und sag in " +
+      "einem Halbsatz, dass die Auswahl fuer diesen Wunsch klein ist. Nimm NIEMALS " +
+      "Haeuser aus dem Gedaechtnis dazu, um auf drei zu kommen - ein Haus, das es so " +
+      "nicht gibt, fuehrt den Nutzer ins Leere.\n\n" +
       "Empfiehl echte, existierende Haeuser. Erfinde keine Namen. Passe die Art der " +
       "Unterkunft dem Wunsch an - wer ein Apartment sucht, bekommt Apartments und " +
       "Aparthotels, kein Grandhotel.\n\n" +
@@ -415,6 +428,11 @@ function AIChat() {
       "[SUCHE: Stadt oder Insel]\n\n" +
       "REGELN:\n" +
       "- Erfinde niemals Preise, Sterne oder Bewertungszahlen und nenne keine konkreten Preise.\n" +
+      "- Nenne auch dann KEINE Sterne-Angaben, wenn sie im Suchtreffer stehen - weder im " +
+      "Fliesstext ('4-Sterne-Hotel') noch als Zusatz im Namen ('- 3 Sterne Superior'). " +
+      "Beschreibe das Haus stattdessen mit seinen Eigenschaften.\n" +
+      "- Fragen ohne Reisebezug beantwortest du in einem knappen Satz und lenkst zurueck " +
+      "zur Unterkunftssuche - keine langen Ausfuehrungen zu fremden Themen.\n" +
       "- Schreibe im sichtbaren Text niemals selbst Links oder booking.com-Adressen.\n" +
       "- Vertroeste nicht ('ich suche gleich...') - deine Empfehlung steht sofort hier.\n" +
       "- Vermeide unbelegte Superlative ('das beste Hotel der Stadt', 'garantiert', " +
@@ -457,10 +475,16 @@ function AIChat() {
       if (!res.ok) throw new Error("HTTP " + res.status);
       var data = await res.json();
 
+      // WICHTIG: mit "" zusammenfuegen, nicht mit "\n".
+      // Die Websuche zerlegt die Antwort in viele Textblocke (je Quellenangabe
+      // einen). Mit "\n" verbunden landen Zeilenumbrueche mitten im Satz - der
+      // Hotelname steht dann allein auf einer Zeile, die Begruendung auf der
+      // naechsten, und die zeilenweise Auswertung unten findet gar nichts mehr.
+      // Der Nutzer sah in dem Fall Text, aber keine Buchungslinks.
       var roh = (data.content || [])
         .filter(function(b) { return b.type === "text" || (!b.type && b.text); })
         .map(function(b) { return b.text || ""; })
-        .join("\n")
+        .join("")
         .trim();
 
       // Zuerst den sichtbaren Text herstellen - genau das, was der Nutzer liest.
@@ -486,10 +510,12 @@ function AIChat() {
       text.split("\n").forEach(function(zeile) {
         var m = zeile.match(HOTELZEILE);
         if (!m) return;
-        var name = m[1].trim();
+        var name = saeubereName(m[1]);
         var stadt = m[2].trim();
-        // Ein Hotelname ist kein ganzer Satz und faengt gross an.
-        if (name.indexOf(". ") !== -1) return;
+        // Ein Hotelname ist kein ganzer Satz und faengt gross an. Geprueft wird
+        // auf ein echtes Satzende (Wort + Punkt + Leerzeichen) - ein blosses
+        // ". " wuerde sonst auch Namen wie "J.K. Place Roma" verwerfen.
+        if (/[a-zäöüß]{3,}\.\s/.test(name)) return;
         if (!/^[A-Z0-9ÄÖÜ]/.test(name)) return;
         var key = (name + "|" + stadt).toLowerCase();
         if (seen[key]) return;

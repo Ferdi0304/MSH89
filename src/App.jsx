@@ -116,7 +116,7 @@ const css = `
 
   /* ---------- STATS ---------- */
   .stats {
-    display: grid; grid-template-columns: repeat(4, 1fr);
+    display: grid; grid-template-columns: repeat(3, 1fr);
     border-top: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb;
     background: #fff; max-width: 900px; margin: 0 auto;
   }
@@ -152,6 +152,8 @@ const css = `
     .stats { grid-template-columns: repeat(2, 1fr); }
     .stat:nth-child(odd) { border-left: none; }
     .stat:nth-child(n+3) { border-top: 1px solid #e5e7eb; }
+    /* Bei drei Kacheln steht die letzte sonst allein in der linken Spalte */
+    .stat:last-child:nth-child(odd) { grid-column: 1 / -1; }
     .stat { padding: 16px 8px; }
     .stat-n { font-size: 19px; }
 
@@ -823,12 +825,11 @@ export default function App() {
               <p style={{ fontSize: 18, color: GRAY, maxWidth: 500, margin: "0 auto 36px", lineHeight: 1.7 }} className="hero-p">Persönliche KI-Beratung und handverlesene Hotels.<br />Ehrlich, unabhängig und kostenlos.</p>
               <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }} className="hero-buttons">
                 <button onClick={function() { setTab("ai"); }} className="btn-gold" style={{ fontSize: 15, padding: "14px 28px", borderRadius: 12, boxShadow: "0 4px 20px rgba(201,150,12,0.3)" }}>KI-Berater starten</button>
-                <button onClick={function() { setTab("meinhotel"); }} style={{ background: "#fff", border: "1.5px solid " + BORDER, borderRadius: 12, padding: "14px 28px", color: TEXT, fontWeight: 600, fontSize: 15, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>Mein Hotel</button>
               </div>
             </div>
           </div>
           <div className="stats">
-            {[[String(HOTELS.length),"Kuratierte Hotels"],["2 Mio+","Unterkünfte"],["Täglich","Neue Auswahl"],["100%","Kostenlos"]].map(function(item) {
+            {[[String(HOTELS.length),"Handverlesene Hotels"],["2 Mio+","Unterkünfte"],["100%","Kostenlose Empfehlung"]].map(function(item) {
               return <div key={item[1]} className="stat">
                 <div className="stat-n">{item[0]}</div>
                 <div className="stat-l">{item[1]}</div>
@@ -839,7 +840,7 @@ export default function App() {
             <WorldSearch />
           </div>
           <div style={{ maxWidth: 1200, margin: "0 auto", padding: "48px 24px" }} className="page-padding">
-            <h2 className="section-h" style={{ fontFamily: "'Playfair Display', serif", fontSize: 30, fontWeight: 700, color: TEXT, marginBottom: 24, textAlign: "center", scrollMarginTop: 80 }}>Unsere kuratierte Auswahl</h2>
+            <h2 className="section-h" style={{ fontFamily: "'Playfair Display', serif", fontSize: 30, fontWeight: 700, color: TEXT, marginBottom: 24, textAlign: "center", scrollMarginTop: 80 }}>Unsere handverlesene Auswahl</h2>
             <div style={{ maxWidth: 500, margin: "0 auto 28px", position: "relative" }} className="search-bar">
               <input
                 value={search}

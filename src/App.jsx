@@ -722,6 +722,10 @@ function WorldSearch() {
   };
 
   var inp = { background: "#f9fafb", border: "1px solid " + BORDER, borderRadius: 10, padding: "12px 14px", fontSize: 14, fontFamily: "Inter, sans-serif", color: TEXT, outline: "none", width: "100%" };
+  // Beschriftung ueber jedem Feld - ohne sie zeigen die Datumsfelder nur
+  // zweimal "tt.mm.jjjj", und niemand weiss, welches An- und welches Abreise ist.
+  var lab = { display: "block" };
+  var labText = { display: "block", fontSize: 12, fontWeight: 600, color: GRAY, marginBottom: 6, paddingLeft: 2 };
 
   return (
     <div className="world-search" style={{ background: "#fff", border: "1px solid " + BORDER, borderRadius: 20, padding: 32, boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}>
@@ -730,16 +734,28 @@ function WorldSearch() {
         <div style={{ fontSize: 14, color: GRAY }}>Über 2 Millionen Unterkünfte weltweit durchsuchen</div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px,1fr))", gap: 12, maxWidth: 800, margin: "0 auto" }}>
-        <input value={ort} onChange={function(e){setOrt(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")go();}} placeholder="Wohin? z.B. Lissabon" style={inp} />
-        <input type="date" value={checkin} onChange={function(e){setCheckin(e.target.value);}} style={inp} />
-        <input type="date" value={checkout} onChange={function(e){setCheckout(e.target.value);}} style={inp} />
-        <select value={gaeste} onChange={function(e){setGaeste(e.target.value);}} style={inp}>
-          <option value="1">1 Gast</option>
-          <option value="2">2 Gäste</option>
-          <option value="3">3 Gäste</option>
-          <option value="4">4 Gäste</option>
-          <option value="6">6 Gäste</option>
-        </select>
+        <label style={lab}>
+          <span style={labText}>Ziel</span>
+          <input value={ort} onChange={function(e){setOrt(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")go();}} placeholder="Wohin? z.B. Lissabon" style={inp} />
+        </label>
+        <label style={lab}>
+          <span style={labText}>von</span>
+          <input type="date" value={checkin} onChange={function(e){setCheckin(e.target.value);}} style={inp} />
+        </label>
+        <label style={lab}>
+          <span style={labText}>bis</span>
+          <input type="date" value={checkout} onChange={function(e){setCheckout(e.target.value);}} min={checkin || undefined} style={inp} />
+        </label>
+        <label style={lab}>
+          <span style={labText}>Gäste</span>
+          <select value={gaeste} onChange={function(e){setGaeste(e.target.value);}} style={inp}>
+            <option value="1">1 Gast</option>
+            <option value="2">2 Gäste</option>
+            <option value="3">3 Gäste</option>
+            <option value="4">4 Gäste</option>
+            <option value="6">6 Gäste</option>
+          </select>
+        </label>
       </div>
       <div style={{ textAlign: "center", marginTop: 16 }}>
         <button onClick={go} disabled={!ort.trim()} className="btn-gold" style={{ padding: "13px 40px", fontSize: 15 }}>Unterkünfte suchen</button>

@@ -755,6 +755,7 @@ export default function App() {
   );
   var [cat, setCat] = useState("all");
   var [search, setSearch] = useState("");
+  var [meinCat, setMeinCat] = useState("nomad");
 
   var filtered = HOTELS.filter(function(h) {
     var matchCat = cat === "all" || h.cat === cat;
@@ -762,9 +763,20 @@ export default function App() {
     var matchSearch = q === "" || h.name.toLowerCase().includes(q) || h.city.toLowerCase().includes(q) || h.country.toLowerCase().includes(q) || h.tags.some(function(t) { return t.toLowerCase().includes(q); });
     return matchCat && matchSearch;
   });
-  var nomads = HOTELS.filter(function(h) { return h.nomad; });
+  // "Mein Hotel": drei Kategorien zur Auswahl. Die Zuordnung auf die
+  // vorhandenen cat-Werte steht hier an einer Stelle.
+  var MEIN_CATS = [
+    ["nomad", "Digitale Nomaden"],
+    ["boutique", "Boutique/Luxus"],
+    ["hostel", "Hostels"]
+  ];
+  var meinAuswahl = HOTELS.filter(function(h) {
+    if (meinCat === "nomad") return h.cat === "nomad";
+    if (meinCat === "boutique") return h.cat === "luxury" || h.cat === "design";
+    return false; // Hostels: derzeit keine im kuratierten Bestand
+  });
 
-  var TABS = [["home","Start"],["nomad","Nomad"],["ai","KI-Berater"]];
+  var TABS = [["home","Home"],["meinhotel","Mein Hotel"],["ai","KI-Berater"]];
   var CATS = [["all","Alle"],["wellness","Wellness"],["design","Design"],["luxury","Luxus"],["nomad","Nomad"]];
 
   return (
@@ -795,7 +807,7 @@ export default function App() {
               <p style={{ fontSize: 18, color: GRAY, maxWidth: 500, margin: "0 auto 36px", lineHeight: 1.7 }} className="hero-p">Persönliche KI-Beratung und handverlesene Hotels.<br />Ehrlich, unabhängig und kostenlos.</p>
               <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }} className="hero-buttons">
                 <button onClick={function() { setTab("ai"); }} className="btn-gold" style={{ fontSize: 15, padding: "14px 28px", borderRadius: 12, boxShadow: "0 4px 20px rgba(201,150,12,0.3)" }}>KI-Berater starten</button>
-                <button onClick={function() { setTab("nomad"); }} style={{ background: "#fff", border: "1.5px solid " + BORDER, borderRadius: 12, padding: "14px 28px", color: TEXT, fontWeight: 600, fontSize: 15, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>Nomad Hotels</button>
+                <button onClick={function() { setTab("meinhotel"); }} style={{ background: "#fff", border: "1.5px solid " + BORDER, borderRadius: 12, padding: "14px 28px", color: TEXT, fontWeight: 600, fontSize: 15, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>Mein Hotel</button>
               </div>
             </div>
           </div>
@@ -845,28 +857,48 @@ export default function App() {
         </div>
       )}
 
-      {tab === "nomad" && (
+      {tab === "meinhotel" && (
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "48px 24px" }} className="page-padding">
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <div style={{ display: "inline-block", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 20, padding: "5px 16px", fontSize: 12, color: "#10b981", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", marginBottom: 16 }}>Remote Work Freundlich</div>
-            <h2 className="section-h" style={{ fontFamily: "'Playfair Display', serif", fontSize: 40, fontWeight: 900, color: TEXT }}>Nomad Hotels</h2>
-            <p style={{ color: GRAY, marginTop: 10, fontSize: 16 }}>Gigabit WLAN - Coworking - Dedizierte Arbeitsbereiche</p>
+          <div style={{ textAlign: "center", marginBottom: 28 }}>
+            <h2 className="section-h" style={{ fontFamily: "'Playfair Display', serif", fontSize: 40, fontWeight: 900, color: TEXT }}>Mein Hotel</h2>
+            <p style={{ color: GRAY, marginTop: 10, fontSize: 16 }}>Wähle deine Kategorie</p>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px,1fr))", gap: 20, marginBottom: 40, background: "#f9fafb", borderRadius: 16, padding: 28, border: "1px solid " + BORDER }} className="nomad-features">
-            {[["WLAN","Gigabit WLAN","Schnelles Internet überall"],["Desk","Coworking","Professionelle Arbeitsbereiche"],["Globe","Top-Städte","Hotels in Europa und weltweit"]].map(function(item) {
-              return <div key={item[1]} style={{ textAlign: "center", padding: 16 }}>
-                <div style={{ fontSize: 32, marginBottom: 10 }}>{item[0]}</div>
-                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 5 }}>{item[1]}</div>
-                <div style={{ fontSize: 13, color: GRAY }}>{item[2]}</div>
-              </div>;
+
+          {/* Auswahlleiste: die drei Kategorien */}
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center", marginBottom: 40 }} className="filter-row">
+            {MEIN_CATS.map(function(item) {
+              var c = item[0]; var l = item[1];
+              var aktiv = meinCat === c;
+              return <button key={c} onClick={function() { setMeinCat(c); }} style={{ background: aktiv ? ACCENT : "#fff", border: "1.5px solid " + (aktiv ? ACCENT : BORDER), borderRadius: 24, padding: "10px 24px", color: aktiv ? "#fff" : GRAY, cursor: "pointer", fontFamily: "Inter, sans-serif", fontWeight: aktiv ? 600 : 500, fontSize: 14, transition: "all 0.15s" }}>{l}</button>;
             })}
           </div>
-          <TaeglicheListe typ="nomad" />
 
-          <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 700, color: TEXT, margin: "48px 0 20px", textAlign: "center" }}>Unsere Empfehlungen</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px,1fr))", gap: 20 }} className="hotel-grid">
-            {nomads.map(function(h) { return <HotelCard key={h.id} hotel={h} />; })}
-          </div>
+          {meinCat === "nomad" && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px,1fr))", gap: 20, marginBottom: 40, background: "#f9fafb", borderRadius: 16, padding: 28, border: "1px solid " + BORDER }} className="nomad-features">
+              {[["WLAN","Gigabit WLAN","Schnelles Internet überall"],["Desk","Coworking","Professionelle Arbeitsbereiche"],["Globe","Top-Städte","Hotels in Europa und weltweit"]].map(function(item) {
+                return <div key={item[1]} style={{ textAlign: "center", padding: 16 }}>
+                  <div style={{ fontSize: 32, marginBottom: 10 }}>{item[0]}</div>
+                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 5 }}>{item[1]}</div>
+                  <div style={{ fontSize: 13, color: GRAY }}>{item[2]}</div>
+                </div>;
+              })}
+            </div>
+          )}
+
+          {meinAuswahl.length > 0 ? (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px,1fr))", gap: 20 }} className="hotel-grid">
+              {meinAuswahl.map(function(h) { return <HotelCard key={h.id} hotel={h} />; })}
+            </div>
+          ) : (
+            <div style={{ textAlign: "center", padding: "48px 24px", background: "#f9fafb", border: "1px solid " + BORDER, borderRadius: 16 }}>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, color: TEXT, marginBottom: 10 }}>Hier kuratieren wir noch</div>
+              <p style={{ color: GRAY, fontSize: 14, lineHeight: 1.7, maxWidth: 460, margin: "0 auto 20px" }}>
+                In dieser Kategorie haben wir aktuell noch keine handverlesenen Häuser.
+                Unser KI-Berater findet dir trotzdem passende Unterkünfte.
+              </p>
+              <button onClick={function() { setTab("ai"); }} className="btn-gold" style={{ padding: "12px 26px", fontSize: 14 }}>KI-Berater fragen</button>
+            </div>
+          )}
         </div>
       )}
 

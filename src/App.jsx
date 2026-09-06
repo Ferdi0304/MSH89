@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 
 const HOTELS = [
-  { id: 1, name: "Mont Cervin Palace", preisIntern: 320, city: "Zermatt", country: "Schweiz", img: "https://images.unsplash.com/photo-1640535092591-b9c35f4b138f?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Berge", "Luxus"], lastMinute: true, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/ch/mont-cervin-palace.de.html" },
+  { id: 1, name: "Mont Cervin Palace", preisIntern: 320, city: "Zermatt", country: "Schweiz", img: "https://images.unsplash.com/photo-1640535092591-b9c35f4b138f?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Berge", "Luxus"], lastMinute: true, nomad: false, cat: "wellness", cats: ["ski"], url: "https://www.booking.com/hotel/ch/mont-cervin-palace.de.html" },
   { id: 2, name: "25hours Hotel Bikini Berlin", preisIntern: 119, city: "Berlin", country: "Deutschland", img: "https://images.unsplash.com/photo-1585405327087-ccddc9329fa5?w=800&q=80&auto=format&fit=crop", tags: ["Nomad", "Design", "Zentral"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/de/25hours-bikini-berlin.de.html" },
   { id: 3, name: "Hotel Negresco", preisIntern: 280, city: "Nizza", country: "Frankreich", img: "https://images.unsplash.com/photo-1491166617655-0723a0999cfc?w=800&q=80&auto=format&fit=crop", tags: ["Meer", "Luxus", "Historisch"], lastMinute: true, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/fr/negresco.de.html" },
   { id: 4, name: "25hours Hotel MuseumsQuartier", preisIntern: 89, city: "Wien", country: "Österreich", img: "https://images.unsplash.com/photo-1646491311728-f4a676e5f17d?w=800&q=80&auto=format&fit=crop", tags: ["Nomad", "Design", "Zentral"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/at/25hours-wien.de.html" },
@@ -12,7 +12,6 @@ const HOTELS = [
   { id: 9, name: "Hotel Sacher Wien", city: "Wien", country: "Österreich", img: "https://upload.wikimedia.org/wikipedia/commons/5/5a/Hotel_Sacher_Vienna_065.jpg", tags: ["Luxus", "Historisch", "Zentral"], lastMinute: false, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/at/sacher-wien.de.html" },
   { id: 10, name: "Boutiquehotel Stadthalle by Cocoon", city: "Wien", country: "Österreich", img: "https://images.unsplash.com/photo-1780283574760-e8d7fd944da5?w=800&q=80&auto=format&fit=crop", tags: ["Design", "Nachhaltig", "Garten"], lastMinute: false, nomad: false, cat: "design", url: "https://www.booking.com/hotel/at/boutique-stadthalle.de.html" },
   { id: 11, name: "Schgaguler Hotel", city: "Kastelruth", country: "Italien", img: "https://images.unsplash.com/photo-1774017092224-54c07e928a39?w=800&q=80&auto=format&fit=crop", tags: ["Design", "Wellness", "Dolomiten"], lastMinute: false, nomad: false, cat: "design", url: "https://www.booking.com/hotel/it/wellness-residence-schgaguler.de.html" },
-  { id: 12, name: "Ushuaïa Ibiza Beach Hotel", city: "Ibiza", country: "Spanien", img: "https://images.unsplash.com/photo-1661416328081-27cd58c4beed?w=800&q=80&auto=format&fit=crop", tags: ["Design", "Strand", "Nightlife"], lastMinute: false, nomad: false, cat: "design", url: "https://www.booking.com/hotel/es/ushuaia-illes-balears1.de.html" },
   { id: 13, name: "STRAF, Milan, a Member of Design Hotels", city: "Mailand", country: "Italien", img: "https://images.unsplash.com/photo-1780689436914-2e87323985e9?w=800&q=80&auto=format&fit=crop", tags: ["Design", "Zentral", "Boutique"], lastMinute: false, nomad: false, cat: "design", url: "https://www.booking.com/hotel/it/straf.de.html" },
   { id: 14, name: "Design Hotel Miramonte", city: "Bad Gastein", country: "Österreich", img: "https://images.unsplash.com/photo-1756765261596-60e8c9074216?w=800&q=80&auto=format&fit=crop", tags: ["Design", "Spa", "Berge"], lastMinute: false, nomad: false, cat: "design", url: "https://www.booking.com/hotel/at/miramonte.de.html" },
   { id: 15, name: "Hotel Belvedere Locarno", city: "Locarno", country: "Schweiz", img: "https://images.unsplash.com/photo-1540737042062-a17a71602964?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "See", "Panorama"], lastMinute: false, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/ch/belvedere-locarno-sa.de.html" },
@@ -28,14 +27,14 @@ const HOTELS = [
   { id: 25, name: "Mama Shelter Prague", city: "Prag", country: "Tschechien", img: "https://images.unsplash.com/photo-1772202950305-2e6fee0b1ab3?w=800&q=80&auto=format&fit=crop", tags: ["Design", "Zentral", "Boutique"], lastMinute: false, nomad: false, cat: "design", url: "https://www.booking.com/hotel/cz/parkhotel-praha.de.html" },
   { id: 26, name: "Six Senses Douro Valley", city: "Lamego", country: "Portugal", img: "https://images.unsplash.com/photo-1693318836072-776a9392b842?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Spa", "Weinberg"], lastMinute: false, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/pt/six-senses-douro-valley.de.html" },
   { id: 27, name: "Canaves Oia Suites", city: "Santorin", country: "Griechenland", img: "https://images.unsplash.com/photo-1696519669474-3001c0e2b548?w=800&q=80&auto=format&fit=crop", tags: ["Luxus", "Meerblick", "Romantik"], lastMinute: false, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/gr/canaves-oia.de.html" },
-  { id: 28, name: "Hôtel Barrière Les Neiges", city: "Courchevel", country: "Frankreich", img: "https://images.unsplash.com/photo-1649421811395-5bfcf16cc37a?w=800&q=80&auto=format&fit=crop", tags: ["Luxus", "Berge", "Ski"], lastMinute: false, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/fr/barriere-les-neiges-courchevel.de.html" },
+  { id: 28, name: "Hôtel Barrière Les Neiges", city: "Courchevel", country: "Frankreich", img: "https://images.unsplash.com/photo-1649421811395-5bfcf16cc37a?w=800&q=80&auto=format&fit=crop", tags: ["Luxus", "Berge", "Ski"], lastMinute: false, nomad: false, cat: "luxury", cats: ["ski"], url: "https://www.booking.com/hotel/fr/barriere-les-neiges-courchevel.de.html" },
   { id: 29, name: "The Fontenay Hamburg", city: "Hamburg", country: "Deutschland", img: "https://images.unsplash.com/photo-1499842667833-0fef33c1d08a?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Spa", "See"], lastMinute: false, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/de/the-fontenay.de.html" },
   { id: 30, name: "METT Barcelona GL", city: "Barcelona", country: "Spanien", img: "https://images.unsplash.com/photo-1690403021832-4934d206cb5f?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Panorama", "Historisch"], lastMinute: false, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/es/gran-la-florida.de.html" },
   { id: 31, name: "Castell Son Claret", city: "Mallorca", country: "Spanien", img: "https://images.unsplash.com/photo-1672264430465-781cd9154896?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Spa", "Natur"], lastMinute: false, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/es/castell-son-claret.de.html" },
   { id: 32, name: "Hotel Maria Cristina", city: "San Sebastián", country: "Spanien", img: "https://images.unsplash.com/photo-1647526232039-6099babcca81?w=800&q=80&auto=format&fit=crop", tags: ["Luxus", "Historisch", "Meer"], lastMinute: false, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/es/maria-cristina-san-sebastian.de.html" },
   { id: 33, name: "Hôtel de Crillon", city: "Paris", country: "Frankreich", img: "https://images.unsplash.com/photo-1663247070205-59e9ebca3666?w=800&q=80&auto=format&fit=crop", tags: ["Luxus", "Historisch", "Zentral"], lastMinute: false, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/fr/de-crillon-paris.de.html" },
   { id: 34, name: "Caruso, A Belmond Hotel", city: "Ravello", country: "Italien", img: "https://images.unsplash.com/photo-1761309557902-3bbfedbe67ad?w=800&q=80&auto=format&fit=crop", tags: ["Luxus", "Meerblick", "Historisch"], lastMinute: false, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/it/caruso.de.html" },
-  { id: 35, name: "Gstaad Palace", city: "Gstaad", country: "Schweiz", img: "https://upload.wikimedia.org/wikipedia/commons/5/51/Gstaad_Palace_Hotel..jpg", tags: ["Luxus", "Berge", "Historisch"], lastMinute: false, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/ch/gstaad-palace.de.html" },
+  { id: 35, name: "Gstaad Palace", city: "Gstaad", country: "Schweiz", img: "https://upload.wikimedia.org/wikipedia/commons/5/51/Gstaad_Palace_Hotel..jpg", tags: ["Luxus", "Berge", "Historisch"], lastMinute: false, nomad: false, cat: "luxury", cats: ["ski"], url: "https://www.booking.com/hotel/ch/gstaad-palace.de.html" },
   { id: 36, name: "Vila Bled", city: "Bled", country: "Slowenien", img: "https://images.unsplash.com/photo-1764357030659-9244f92d81e0?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "See", "Historisch"], lastMinute: false, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/si/vila-bled.de.html" },
   { id: 37, name: "Aria Hotel Budapest", city: "Budapest", country: "Ungarn", img: "https://images.unsplash.com/photo-1761249747656-d0dadc498220?w=800&q=80&auto=format&fit=crop", tags: ["Design", "Zentral", "Boutique"], lastMinute: false, nomad: false, cat: "design", url: "https://www.booking.com/hotel/hu/aria-budapest.de.html" },
   { id: 38, name: "Numa Berlin Nook", city: "Berlin", country: "Deutschland", img: "https://images.unsplash.com/photo-1751257983922-a627088d4c21?w=800&q=80&auto=format&fit=crop", tags: ["Nomad", "Design", "Zentral"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/de/frederics-serviced-apartment.de.html" },
@@ -50,15 +49,50 @@ const HOTELS = [
   { id: 47, name: "The Social Hub Rotterdam", city: "Rotterdam", country: "Niederlande", img: "https://images.unsplash.com/photo-1776179343076-236a5893ec3e?w=800&q=80&auto=format&fit=crop", tags: ["Nomad", "Coworking", "Design"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/nl/the-social-hub-rotterdam.de.html" },
   { id: 48, name: "Brenners Park-Hotel & Spa", city: "Baden-Baden", country: "Deutschland", img: "https://images.unsplash.com/photo-1678960591129-ff8db00462e2?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Spa", "Historisch"], lastMinute: false, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/de/brennersparkhotelspa.de.html" },
   { id: 49, name: "Hotel Sacher Salzburg", city: "Salzburg", country: "Österreich", img: "https://images.unsplash.com/photo-1760456309029-dedb5c3b19df?w=800&q=80&auto=format&fit=crop", tags: ["Luxus", "Historisch", "Zentral"], lastMinute: false, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/at/hotelsachersalzburg.de.html" },
-  { id: 50, name: "Badrutt's Palace Hotel", city: "St. Moritz", country: "Schweiz", img: "https://images.unsplash.com/photo-1601660803615-4e5bbb72596f?w=800&q=80&auto=format&fit=crop", tags: ["Luxus", "Berge", "Historisch"], lastMinute: false, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/ch/badrutt-s-palace-st-moritz.de.html" },
+  { id: 50, name: "Badrutt's Palace Hotel", city: "St. Moritz", country: "Schweiz", img: "https://images.unsplash.com/photo-1601660803615-4e5bbb72596f?w=800&q=80&auto=format&fit=crop", tags: ["Luxus", "Berge", "Historisch"], lastMinute: false, nomad: false, cat: "luxury", cats: ["ski"], url: "https://www.booking.com/hotel/ch/badrutt-s-palace-st-moritz.de.html" },
   { id: 51, name: "Bürgenstock Hotel & Alpine Spa", city: "Bürgenstock", country: "Schweiz", img: "https://images.unsplash.com/photo-1651822009112-c9a1a8d34a7f?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Spa", "See"], lastMinute: false, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/ch/burgenstock-hotels-ag.de.html" },
   { id: 52, name: "Grand Hotel Tremezzo", city: "Tremezzo", country: "Italien", img: "https://images.unsplash.com/photo-1606745463199-d7623eee5f8a?w=800&q=80&auto=format&fit=crop", tags: ["Luxus", "See", "Panorama"], lastMinute: false, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/it/grandhoteltremezzopalace.de.html" },
-  { id: 53, name: "Borgo Egnazia", city: "Savelletri di Fasano", country: "Italien", img: "https://images.unsplash.com/photo-1659204236580-1c481bd45adf?w=800&q=80&auto=format&fit=crop", tags: ["Design", "Spa", "Meer"], lastMinute: false, nomad: false, cat: "design", url: "https://www.booking.com/hotel/it/borgo-egnazia-spa-golf-ville.de.html" },
+  { id: 53, name: "Borgo Egnazia", city: "Savelletri di Fasano", country: "Italien", img: "https://images.unsplash.com/photo-1659204236580-1c481bd45adf?w=800&q=80&auto=format&fit=crop", tags: ["Luxus", "Spa", "Meer"], lastMinute: false, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/it/borgo-egnazia-spa-golf-ville.de.html" },
   { id: 54, name: "Selina Secret Garden Lisbon", city: "Lissabon", country: "Portugal", img: "https://images.unsplash.com/photo-1741034256927-3fde0ced8903?w=800&q=80&auto=format&fit=crop", tags: ["Nomad", "Coworking", "Zentral"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/pt/doorm-quality-housing.de.html" },
   { id: 55, name: "Airelles Château de la Messardière", city: "Saint-Tropez", country: "Frankreich", img: "https://images.unsplash.com/photo-1703152792682-a1fe5f3dedb4?w=800&q=80&auto=format&fit=crop", tags: ["Luxus", "Meerblick", "Historisch"], lastMinute: false, nomad: false, cat: "luxury", url: "https://www.booking.com/hotel/fr/chateau-de-la-messardiere.de.html" },
   { id: 56, name: "Grand Hotel Heiligendamm", city: "Heiligendamm", country: "Deutschland", img: "https://images.unsplash.com/photo-1669988022723-270ef6f613bb?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Spa", "Strand"], lastMinute: false, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/de/grand-hotel-heiligendamm.de.html" },
   { id: 57, name: "Kempinski Hotel Adriatic Istria Croatia", city: "Savudrija", country: "Kroatien", img: "https://images.unsplash.com/photo-1604696896158-33aa56a7d352?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Golf", "Meer"], lastMinute: false, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/hr/kempinski-adriatic-istria-croatia.de.html" },
   { id: 58, name: "Falkensteiner Schlosshotel Velden", city: "Velden am Wörthersee", country: "Österreich", img: "https://images.unsplash.com/photo-1748375748328-d9e30a0adc02?w=800&q=80&auto=format&fit=crop", tags: ["Wellness", "Spa", "See"], lastMinute: false, nomad: false, cat: "wellness", url: "https://www.booking.com/hotel/at/falkensteiner-schlosshotel-velden.de.html" },
+
+  // --- Ski ---
+  { id: 59, name: "Riffelalp Resort 2222m", city: "Zermatt", country: "Schweiz", img: "https://images.unsplash.com/photo-1519931760384-a96fedd8dfa9?w=800&q=80&auto=format&fit=crop", tags: ["Ski", "Berge", "Panorama"], lastMinute: false, nomad: false, cat: "ski", url: "https://www.booking.com/hotel/ch/riffelalp-resort-2222m-zermatt1.de.html" },
+  { id: 60, name: "Hotel Kaiserhof Kitzbühel", city: "Kitzbühel", country: "Österreich", img: "https://images.unsplash.com/photo-1523720131524-71ae6dbed986?w=800&q=80&auto=format&fit=crop", tags: ["Ski", "Spa", "Zentral"], lastMinute: false, nomad: false, cat: "ski", url: "https://www.booking.com/hotel/at/hotel-kaiserhof-kitzbuhel.de.html" },
+  { id: 61, name: "Alpenhotel Kitzbühel am Schwarzsee", city: "Kitzbühel", country: "Österreich", img: "https://images.unsplash.com/photo-1664436341001-b02974ae7524?w=800&q=80&auto=format&fit=crop", tags: ["Ski", "See", "Berge"], lastMinute: false, nomad: false, cat: "ski", url: "https://www.booking.com/hotel/at/alpenhotel-kitzbuhel.de.html" },
+  { id: 62, name: "Trofana Royal", city: "Ischgl", country: "Österreich", img: "https://images.unsplash.com/photo-1515767513519-e50caaf922e3?w=800&q=80&auto=format&fit=crop", tags: ["Ski", "Spa", "Gourmet"], lastMinute: false, nomad: false, cat: "ski", url: "https://www.booking.com/hotel/at/trofana-royal.de.html" },
+  { id: 63, name: "Das Central", city: "Sölden", country: "Österreich", img: "https://images.unsplash.com/photo-1546180043-e1475c173021?w=800&q=80&auto=format&fit=crop", tags: ["Ski", "Spa", "Gourmet"], lastMinute: false, nomad: false, cat: "ski", url: "https://www.booking.com/hotel/at/central-spa-solden.de.html" },
+  { id: 64, name: "Hotel Almhof Schneider", city: "Lech am Arlberg", country: "Österreich", img: "https://images.unsplash.com/photo-1562826542-449090f38c70?w=800&q=80&auto=format&fit=crop", tags: ["Ski", "Spa", "Historisch"], lastMinute: false, nomad: false, cat: "ski", url: "https://www.booking.com/hotel/at/almhof-schneider.de.html" },
+  { id: 65, name: "Hotel Seehof Davos", city: "Davos", country: "Schweiz", img: "https://images.unsplash.com/photo-1670020112207-0e3592080eac?w=800&q=80&auto=format&fit=crop", tags: ["Ski", "Spa", "Zentral"], lastMinute: false, nomad: false, cat: "ski", url: "https://www.booking.com/hotel/ch/hotelseehof.de.html" },
+  { id: 66, name: "Hotel Alpine Palace", city: "Saalbach-Hinterglemm", country: "Österreich", img: "https://images.unsplash.com/photo-1512582246858-a9bbaf61b61a?w=800&q=80&auto=format&fit=crop", tags: ["Ski", "Spa", "Berge"], lastMinute: false, nomad: false, cat: "ski", url: "https://www.booking.com/hotel/at/the-alpine-palace-new-balance-luxus-resort.de.html" },
+  { id: 67, name: "Riessersee Hotel", city: "Garmisch-Partenkirchen", country: "Deutschland", img: "https://images.unsplash.com/photo-1521281345269-9a2999ef6d21?w=800&q=80&auto=format&fit=crop", tags: ["Ski", "See", "Spa"], lastMinute: false, nomad: false, cat: "ski", url: "https://www.booking.com/hotel/de/renaissance-riessersee.de.html" },
+  { id: 68, name: "Das Alpenhaus Kaprun", city: "Kaprun", country: "Österreich", img: "https://images.unsplash.com/photo-1548604130-5db6fcf5fc13?w=800&q=80&auto=format&fit=crop", tags: ["Ski", "Spa", "Berge"], lastMinute: false, nomad: false, cat: "ski", url: "https://www.booking.com/hotel/at/hotelkaprun.de.html" },
+
+  // --- Hostels ---
+  { id: 69, name: "Generator Berlin Mitte", city: "Berlin", country: "Deutschland", img: "https://images.unsplash.com/photo-1709805619372-40de3f158e83?w=800&q=80&auto=format&fit=crop", tags: ["Hostel", "Zentral", "Design"], lastMinute: false, nomad: false, cat: "hostel", url: "https://www.booking.com/hotel/de/generator-berlin-mitte.de.html" },
+  { id: 70, name: "The Circus Hostel", city: "Berlin", country: "Deutschland", img: "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=800&q=80&auto=format&fit=crop", tags: ["Hostel", "Zentral", "Community"], lastMinute: false, nomad: false, cat: "hostel", url: "https://www.booking.com/hotel/de/the-circus-hostel.de.html" },
+  { id: 71, name: "Superbude Hamburg St. Pauli", city: "Hamburg", country: "Deutschland", img: "https://images.unsplash.com/photo-1626265774643-f1943311a86b?w=800&q=80&auto=format&fit=crop", tags: ["Hostel", "Design", "Zentral"], lastMinute: false, nomad: false, cat: "hostel", url: "https://www.booking.com/hotel/de/superbude-hostel-st-pauli.de.html" },
+  { id: 72, name: "Wombat's City Hostel München", city: "München", country: "Deutschland", img: "https://images.unsplash.com/photo-1549881567-c622c1080d78?w=800&q=80&auto=format&fit=crop", tags: ["Hostel", "Zentral", "Community"], lastMinute: false, nomad: false, cat: "hostel", url: "https://www.booking.com/hotel/de/wombats-the-city-hostel-munich-werksviertel.de.html" },
+  { id: 73, name: "Wombat's City Hostel Wien Naschmarkt", city: "Wien", country: "Österreich", img: "https://images.unsplash.com/photo-1630827807282-6be2a754361d?w=800&q=80&auto=format&fit=crop", tags: ["Hostel", "Zentral", "Community"], lastMinute: false, nomad: false, cat: "hostel", url: "https://www.booking.com/hotel/at/wombats-hostels-vienna-naschmarkt.de.html" },
+  { id: 74, name: "Sir Toby's Hostel", city: "Prag", country: "Tschechien", img: "https://images.unsplash.com/photo-1575393382552-1b59de5f4f3a?w=800&q=80&auto=format&fit=crop", tags: ["Hostel", "Garten", "Community"], lastMinute: false, nomad: false, cat: "hostel", url: "https://www.booking.com/hotel/cz/sir-toby-s.de.html" },
+  { id: 75, name: "Home Lisbon Hostel", city: "Lissabon", country: "Portugal", img: "https://images.unsplash.com/photo-1586214601498-4dbcfd0bf2c8?w=800&q=80&auto=format&fit=crop", tags: ["Hostel", "Zentral", "Community"], lastMinute: false, nomad: false, cat: "hostel", url: "https://www.booking.com/hotel/pt/home-lisbon-hostel-lisboa.de.html" },
+  { id: 76, name: "ClinkNOORD", city: "Amsterdam", country: "Niederlande", img: "https://images.unsplash.com/photo-1573551461515-4c44d140a829?w=800&q=80&auto=format&fit=crop", tags: ["Hostel", "Design", "Wasser"], lastMinute: false, nomad: false, cat: "hostel", url: "https://www.booking.com/hotel/nl/clinknoord.de.html" },
+  { id: 77, name: "Room Casa Gracia", city: "Barcelona", country: "Spanien", img: "https://images.unsplash.com/photo-1544377213-6cafd9fb8737?w=800&q=80&auto=format&fit=crop", tags: ["Hostel", "Zentral", "Design"], lastMinute: false, nomad: false, cat: "hostel", url: "https://www.booking.com/hotel/es/hostel-casa-gracia.de.html" },
+  { id: 78, name: "Generator Barcelona", city: "Barcelona", country: "Spanien", img: "https://images.unsplash.com/photo-1700490985738-7adc323232d1?w=800&q=80&auto=format&fit=crop", tags: ["Hostel", "Design", "Zentral"], lastMinute: false, nomad: false, cat: "hostel", url: "https://www.booking.com/hotel/es/generator-hostel-barcelona.de.html" },
+
+  // --- Digitale Nomaden ---
+  { id: 79, name: "Zoku Vienna", city: "Wien", country: "Österreich", img: "https://images.unsplash.com/photo-1621293954908-907159247fc8?w=800&q=80&auto=format&fit=crop", tags: ["Nomad", "Coworking", "Design"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/at/zoku-vienna.de.html" },
+  { id: 80, name: "Zoku Copenhagen", city: "Kopenhagen", country: "Dänemark", img: "https://images.unsplash.com/photo-1660557989695-14fac79c086d?w=800&q=80&auto=format&fit=crop", tags: ["Nomad", "Coworking", "Design"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/dk/zoku-copenhagen.de.html" },
+  { id: 81, name: "Zoku Paris", city: "Paris", country: "Frankreich", img: "https://images.unsplash.com/photo-1573052905904-34ad8c27f0cc?w=800&q=80&auto=format&fit=crop", tags: ["Nomad", "Coworking", "Design"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/fr/zoku-paris.de.html" },
+  { id: 82, name: "The Social Hub Barcelona Poblenou", city: "Barcelona", country: "Spanien", img: "https://images.unsplash.com/photo-1692153142524-60285a93c249?w=800&q=80&auto=format&fit=crop", tags: ["Nomad", "Coworking", "Rooftop"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/es/the-social-hub-barcelona-poblenou.de.html" },
+  { id: 83, name: "The Social Hub Florence Lavagnini", city: "Florenz", country: "Italien", img: "https://images.unsplash.com/photo-1565031491910-e57fac031c41?w=800&q=80&auto=format&fit=crop", tags: ["Nomad", "Coworking", "Historisch"], lastMinute: false, nomad: true, cat: "nomad", url: "https://www.booking.com/hotel/it/the-social-hub-florence-firenze.de.html" },
+
+  // --- Boutique/Design ---
+  { id: 84, name: "Michelberger Hotel", city: "Berlin", country: "Deutschland", img: "https://images.unsplash.com/photo-1585418694458-dc80a5c20294?w=800&q=80&auto=format&fit=crop", tags: ["Design", "Boutique", "Zentral"], lastMinute: false, nomad: false, cat: "design", url: "https://www.booking.com/hotel/de/michelbergerhotel.de.html" },
+  { id: 85, name: "Boutique Hotel Ottilia", city: "Kopenhagen", country: "Dänemark", img: "https://images.unsplash.com/photo-1637730827702-de34e9ae4ede?w=800&q=80&auto=format&fit=crop", tags: ["Design", "Boutique", "Rooftop"], lastMinute: false, nomad: false, cat: "design", url: "https://www.booking.com/hotel/dk/ottilia.de.html" },
 ];
 
 const ACCENT = "#C9960C";
@@ -172,8 +206,14 @@ const css = `
 // Website-ID: 101831910 | Link-ID: 15734849
 const CJ_BASE = "https://www.kqzyfj.com/click-101831910-15734849";
 
-function track(bookingUrl) {
-  return CJ_BASE + "?url=" + encodeURIComponent(bookingUrl);
+// Der zweite Parameter ist eine Herkunftsmarke (CJ nennt das sid). Sie
+// erscheint spaeter im CJ-Bericht und beantwortet die Frage, welcher
+// Bereich der Seite eine Buchung gebracht hat - ohne sie laufen alle
+// Links ununterscheidbar ueber dieselbe Link-ID.
+function track(bookingUrl, sid) {
+  var u = CJ_BASE + "?url=" + encodeURIComponent(bookingUrl);
+  if (sid) u += "&sid=" + encodeURIComponent(String(sid).slice(0, 40));
+  return u;
 }
 
 // Entfernt NUR die technischen Marker und Markdown-Reste.
@@ -313,11 +353,11 @@ function searchUrl(params) {
   u += "&no_rooms=1";
   if (params.maxPreis) u += "&order=price";
   u += "&selected_currency=EUR&lang=de";
-  return track(u);
+  return track(u, params.sid);
 }
 
-function HotelCard({ hotel, highlight }) {
-  const url = track(hotel.url);
+function HotelCard({ hotel, highlight, quelle }) {
+  const url = track(hotel.url, (quelle || "karte") + "-" + hotel.id);
   // Keine Sterne, keine Bewertungszahlen, keine Preisangabe:
   // Diese Werte kennen wir nicht. Erfundene Angaben waeren nach
   // UWG irrefuehrend. Der echte Stand steht bei Booking.
@@ -528,8 +568,8 @@ function AIChat() {
         // auf genau diesem Haus.
         var echteUrl = findeHotelUrl(name, suchtreffer);
         var url = echteUrl
-          ? track(echteUrl)
-          : searchUrl({ ort: hotelSuchbegriff(name, stadt) });
+          ? track(echteUrl, "ki-hotel")
+          : searchUrl({ ort: hotelSuchbegriff(name, stadt), sid: "ki-suche" });
         liste.push({ name: name, stadt: stadt, url: url });
       });
       setEmpfehlungen(liste.slice(0, 5));
@@ -540,7 +580,7 @@ function AIChat() {
       var mSuche = roh.match(/\[SUCHE:\s*([^\]]+)\]/i);
       var ort = mSuche ? mSuche[1].replace(/,.*$/, "").trim() : "";
       if (!ort && liste.length) ort = liste[0].stadt;
-      if (ort) setSearchLink({ url: searchUrl({ ort: ort }), ort: ort });
+      if (ort) setSearchLink({ url: searchUrl({ ort: ort, sid: "ki-region" }), ort: ort });
 
       // Nur wenn wirklich nichts uebrig bleibt, gibt es einen Ersatztext -
       // und der wird NICHT in den Verlauf uebernommen (Flag ersatz), sonst
@@ -720,7 +760,7 @@ function WorldSearch() {
 
   var go = function() {
     if (!ort.trim()) return;
-    window.open(searchUrl({ ort: ort, checkin: checkin, checkout: checkout, erwachsene: gaeste }), "_blank");
+    window.open(searchUrl({ ort: ort, checkin: checkin, checkout: checkout, erwachsene: gaeste, sid: "weltsuche" }), "_blank");
   };
 
   var inp = { background: "#f9fafb", border: "1px solid " + BORDER, borderRadius: 10, padding: "12px 14px", fontSize: 14, fontFamily: "Inter, sans-serif", color: TEXT, outline: "none", width: "100%" };
@@ -789,11 +829,14 @@ export default function App() {
     ["nomad", "Digitale Nomaden"],
     ["hostel", "Hostels"],
     ["luxury", "Luxus"],
+    ["ski", "Ski/Winterurlaub"],
     ["wellness", "Wellness"]
   ];
+  // Ein Haus hat eine Hauptkategorie (cat). Manche gehoeren zusaetzlich in
+  // eine zweite - ein Grandhotel in St. Moritz ist Luxus UND Ski. Dafuer das
+  // optionale Feld cats, damit es in beiden Leisten auftaucht.
   var meinAuswahl = HOTELS.filter(function(h) {
-    if (meinCat === "hostel") return false; // derzeit keine im Bestand
-    return h.cat === meinCat;
+    return h.cat === meinCat || (h.cats && h.cats.indexOf(meinCat) !== -1);
   });
 
   var TABS = [["home","Home"],["meinhotel","Mein Hotel"],["ai","KI-Berater"]];
@@ -862,7 +905,7 @@ export default function App() {
               )}
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px,1fr))", gap: 20 }} className="hotel-grid">
-              {filtered.map(function(h) { return <HotelCard key={h.id} hotel={h} />; })}
+              {filtered.map(function(h) { return <HotelCard key={h.id} hotel={h} quelle="home" />; })}
             </div>
             {filtered.length === 0 && (
               <div style={{ textAlign: "center", padding: "60px 0", color: GRAY }}>
@@ -911,7 +954,7 @@ export default function App() {
 
           {meinAuswahl.length > 0 ? (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px,1fr))", gap: 20 }} className="hotel-grid">
-              {meinAuswahl.map(function(h) { return <HotelCard key={h.id} hotel={h} />; })}
+              {meinAuswahl.map(function(h) { return <HotelCard key={h.id} hotel={h} quelle={meinCat} />; })}
             </div>
           ) : (
             <div style={{ textAlign: "center", padding: "48px 24px", background: "#f9fafb", border: "1px solid " + BORDER, borderRadius: 16 }}>

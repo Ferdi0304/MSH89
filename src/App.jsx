@@ -843,7 +843,7 @@ export default function App() {
           </div>
           <div style={{ maxWidth: 1200, margin: "0 auto", padding: "48px 24px" }} className="page-padding">
             <h2 className="section-h" style={{ fontFamily: "'Playfair Display', serif", fontSize: 30, fontWeight: 700, color: TEXT, marginBottom: 24, textAlign: "center", scrollMarginTop: 80 }}>Unsere handverlesene Auswahl</h2>
-            <div style={{ maxWidth: 500, margin: "0 auto 28px", position: "relative" }} className="search-bar">
+            <div style={{ maxWidth: 500, margin: "0 auto 36px", position: "relative" }} className="search-bar">
               <input
                 value={search}
                 onChange={function(e) { setSearch(e.target.value); }}
@@ -854,12 +854,6 @@ export default function App() {
               {search && (
                 <button onClick={function() { setSearch(""); }} style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 18, color: GRAY }}>&#x2715;</button>
               )}
-            </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", marginBottom: 36 }} className="filter-row">
-              {CATS.map(function(item) {
-                var c = item[0]; var l = item[1];
-                return <button key={c} onClick={function() { setCat(c); }} style={{ background: cat===c ? ACCENT : "#fff", border: "1.5px solid " + (cat===c ? ACCENT : BORDER), borderRadius: 24, padding: "7px 18px", color: cat===c ? "#fff" : GRAY, cursor: "pointer", fontFamily: "Inter, sans-serif", fontWeight: cat===c ? 600 : 400, fontSize: 13, transition: "all 0.15s" }}>{l}</button>;
-              })}
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px,1fr))", gap: 20 }} className="hotel-grid">
               {filtered.map(function(h) { return <HotelCard key={h.id} hotel={h} />; })}

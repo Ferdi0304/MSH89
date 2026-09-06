@@ -850,7 +850,13 @@ export default function App() {
                 placeholder="Hotel, Stadt oder Land suchen..."
                 style={{ width: "100%", padding: "13px 20px 13px 46px", border: "1.5px solid " + BORDER, borderRadius: 50, fontSize: 15, fontFamily: "Inter, sans-serif", color: TEXT, outline: "none", background: "#f9fafb", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}
               />
-              <span style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", fontSize: 18, color: GRAY }}>&#128269;</span>
+              {/* Feine gezeichnete Lupe statt Emoji - das bunte 🔍 fiel aus dem Stil */}
+              <span style={{ position: "absolute", left: 18, top: "50%", transform: "translateY(-50%)", color: ACCENT, display: "flex", pointerEvents: "none" }}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                  <circle cx="10.5" cy="10.5" r="6.5" />
+                  <line x1="15.6" y1="15.6" x2="20.5" y2="20.5" />
+                </svg>
+              </span>
               {search && (
                 <button onClick={function() { setSearch(""); }} style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 18, color: GRAY }}>&#x2715;</button>
               )}
@@ -860,7 +866,12 @@ export default function App() {
             </div>
             {filtered.length === 0 && (
               <div style={{ textAlign: "center", padding: "60px 0", color: GRAY }}>
-                <div style={{ fontSize: 48, marginBottom: 16 }}>&#128269;</div>
+                <div style={{ marginBottom: 16, display: "flex", justifyContent: "center", color: "#d8c48a" }}>
+                  <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round">
+                    <circle cx="10.5" cy="10.5" r="6.5" />
+                    <line x1="15.6" y1="15.6" x2="20.5" y2="20.5" />
+                  </svg>
+                </div>
                 <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, color: TEXT, marginBottom: 8 }}>Kein Hotel gefunden</div>
                 <div style={{ fontSize: 14 }}>Versuche einen anderen Suchbegriff oder</div>
                 <button onClick={function() { setSearch(""); setCat("all"); }} style={{ marginTop: 12, background: ACCENT, color: "#fff", border: "none", borderRadius: 20, padding: "8px 20px", cursor: "pointer", fontFamily: "Inter, sans-serif", fontWeight: 600 }}>Suche zurücksetzen</button>

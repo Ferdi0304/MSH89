@@ -785,13 +785,13 @@ export default function App() {
   // vorhandenen cat-Werte steht hier an einer Stelle.
   var MEIN_CATS = [
     ["nomad", "Digitale Nomaden"],
-    ["boutique", "Boutique/Luxus"],
+    ["design", "Design/Boutique"],
+    ["luxury", "Luxus"],
     ["hostel", "Hostels"]
   ];
   var meinAuswahl = HOTELS.filter(function(h) {
-    if (meinCat === "nomad") return h.cat === "nomad";
-    if (meinCat === "boutique") return h.cat === "luxury" || h.cat === "design";
-    return false; // Hostels: derzeit keine im kuratierten Bestand
+    if (meinCat === "hostel") return false; // derzeit keine im Bestand
+    return h.cat === meinCat;
   });
 
   var TABS = [["home","Home"],["meinhotel","Mein Hotel"],["ai","KI-Berater"]];

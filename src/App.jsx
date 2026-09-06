@@ -783,11 +783,13 @@ export default function App() {
   });
   // "Mein Hotel": drei Kategorien zur Auswahl. Die Zuordnung auf die
   // vorhandenen cat-Werte steht hier an einer Stelle.
+  // Alphabetisch nach Beschriftung sortiert
   var MEIN_CATS = [
+    ["design", "Boutique/Design"],
     ["nomad", "Digitale Nomaden"],
-    ["design", "Design/Boutique"],
+    ["hostel", "Hostels"],
     ["luxury", "Luxus"],
-    ["hostel", "Hostels"]
+    ["wellness", "Wellness"]
   ];
   var meinAuswahl = HOTELS.filter(function(h) {
     if (meinCat === "hostel") return false; // derzeit keine im Bestand

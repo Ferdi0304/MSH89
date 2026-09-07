@@ -60,23 +60,25 @@ function seite({ pfad, titel, beschreibung, inhalt, jsonld }) {
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <script type="application/ld+json">${JSON.stringify(jsonld)}</script>
-    <!-- Nur fuer die Millisekunden, bis die App uebernimmt: der vorgerenderte
-         Inhalt soll in dieser Zeit nach Marke aussehen, nicht nach Rohtext. -->
+    <!-- Nur fuer die Millisekunden, bis die App uebernimmt.
+         WICHTIG: ausschliesslich #vorab ansprechen, niemals #root - sonst
+         bleibt die Formatierung nach dem App-Start bestehen und presst das
+         gesamte Layout in eine schmale Spalte. -->
     <style>
       body { margin: 0; background: #fff; }
-      #root { font-family: Inter, system-ui, sans-serif; color: #1a1a2e;
-              max-width: 900px; margin: 0 auto; padding: 48px 24px; }
-      #root h1, #root h2 { font-family: 'Playfair Display', Georgia, serif; }
-      #root h1 { font-size: 34px; margin: 0 0 12px; }
-      #root h2 { font-size: 21px; margin: 32px 0 10px; }
-      #root p { color: #6b7280; line-height: 1.7; margin: 0 0 12px; }
-      #root ul { color: #6b7280; line-height: 1.9; padding-left: 20px; }
-      #root a { color: #C9960C; }
+      #vorab { font-family: Inter, system-ui, sans-serif; color: #1a1a2e;
+               max-width: 900px; margin: 0 auto; padding: 48px 24px; }
+      #vorab h1, #vorab h2 { font-family: 'Playfair Display', Georgia, serif; }
+      #vorab h1 { font-size: 34px; margin: 0 0 12px; }
+      #vorab h2 { font-size: 21px; margin: 32px 0 10px; }
+      #vorab p { color: #6b7280; line-height: 1.7; margin: 0 0 12px; }
+      #vorab ul { color: #6b7280; line-height: 1.9; padding-left: 20px; }
+      #vorab a { color: #C9960C; }
     </style>
     ${assets}
   </head>
   <body>
-    <div id="root">${inhalt}</div>
+    <div id="root"><div id="vorab">${inhalt}</div></div>
   </body>
 </html>
 `;

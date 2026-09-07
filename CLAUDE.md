@@ -39,13 +39,15 @@ Website-ID 101831910, Link-ID 15734849.
 - Deutschsprachige Oberflaeche, Du-Ansprache.
 
 ## Offene Punkte
-- `api/deals.js` + die Komponente `TaeglicheListe` (Nomad-Tab) sind
-  verdrahtet, aber tot: der Client ruft `/api/deals?typ=nomad` auf, der
-  Server liest jedoch nur `req.query.stadt` - der Cache liefert deshalb
-  immer eine leere Liste. Zudem gibt es im Repo keinen Aufrufer, der per
-  POST je Hotels in den Cache schreiben wuerde; der Schreibpfad wird nie
-  benutzt. Der Nomad-Tab zeigt aktuell dauerhaft den Leer-Hinweis
-  ("aktuelle Auswahl ist gerade nicht verfuegbar").
+- `api/deals.js` + die Komponente `TaeglicheListe` sind weiterhin tot:
+  der Client rief `/api/deals?typ=nomad` auf, der Server liest aber nur
+  `req.query.stadt`, und niemand schreibt je per POST in den Cache. Die
+  Komponente wird seit dem Umbau auf "Mein Hotel" nicht mehr gerendert
+  (sie zeigte Besuchern dauerhaft "gerade nicht verfuegbar"), der Code
+  steht aber noch da. Waere die Grundlage fuer einen Ziel-Cache, mit dem
+  die KI-Suchkosten unter 1 Cent faellen - braucht dann aber einen echten
+  Speicher (z.B. Vercel KV), weil der In-Memory-Cache auf Serverless
+  nicht zuverlaessig ueberlebt.
 - `api/chat.js` hat einen CORS-Origin-Check (Allowlist: myspecialhotel.com,
   www.myspecialhotel.com, msh-89.vercel.app, localhost:5173) - fremde
   Browser-Origins bekommen 403. Das stoppt Missbrauch aus fremden
@@ -57,9 +59,32 @@ Website-ID 101831910, Link-ID 15734849.
   alle Link-Builder (`searchUrl`, `track`, `hotelSuchbegriff`) durchgehend
   `encodeURIComponent`. Im Review war der Bug damit nicht reproduzierbar -
   bitte pruefen, ob er noch auftritt, oder ob er bereits behoben wurde.
-- Inventar von ca. 8 auf 30-50 kuratierte Hotels erweitern (`HOTELS`-Array
-  in App.jsx). Die Statistik "8 Kuratierte Hotels" im Hero-Bereich ist
-  hart codiert und muesste mitwachsen.
+- Bilder: 172 der 174 Haeuser zeigen thematische Unsplash-Fotos, nicht das
+  echte Haus (nur Sacher Wien und Gstaad Palace haben ein echtes Foto von
+  Wikimedia). Das ist der groesste offene Konversionshebel - sauber loesbar
+  nur ueber Bookings Content-API fuer Partner, die separat beantragt werden
+  muss. Booking-Bilder einfach zu hotlinken verstoesst gegen deren
+  Nutzungsbedingungen.
+- Linkpflege: Booking-Slugs veralten, wenn Haeuser umbenannt werden oder den
+  Betreiber wechseln. Beim Rundumcheck im September 2026 waren 4 von 174
+  betroffen (Boutiquehotel Stadthalle -> Cocoon, numa Berlin Nook, Kempinski
+  Adriatic -> Minor Hotels, Palais Hansen Kempinski -> Anantara). Pruefweg
+  siehe unten - einmal pro Quartal sinnvoll.
+- CJ-`sid`: jeder Buchungslink traegt eine Herkunftsmarke (`luxury-19`,
+  `ki-hotel`, `weltsuche` ...). Ob CJ den Parameter im Bericht wirklich
+  ausweist, ist noch nicht am Livesystem bestaetigt.
+
+## Linkpruefung (bewaehrter Weg)
+Booking.com blockt automatisierte Abrufe: echte und erfundene Hotel-URLs
+liefern identische 202-Antworten, ein direkter Check ist also wertlos.
+DuckDuckGo sperrt nach wenigen Abfragen und liefert dann stillschweigend
+leere Ergebnisse - das sieht wie "Hotel existiert nicht" aus und fuehrt in
+die Irre. Funktioniert hat **Startpage** (`startpage.com/sp/search?query=`):
+Slug per Regex aus dem HTML ziehen, ~5s Pause, Sperre an Statuscode und
+Antwortlaenge (<120k) erkennen und davon getrennt behandeln, Zwischenstand
+nach jedem Hotel speichern. Vorsicht bei der automatischen Zuordnung: das
+Land im Slug muss zum Hotel passen, und ein Treffer nur auf den Staedtenamen
+ist kein Treffer.
 
 ## Arbeitsweise
 Ehrliche Einschaetzung vor Zustimmung. Bei fragwuerdigen Ansaetzen

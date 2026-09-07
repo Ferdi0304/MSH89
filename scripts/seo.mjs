@@ -11,7 +11,7 @@
 import fs from "fs";
 import path from "path";
 
-const BASIS = "https://myspecialhotel.com";
+const BASIS = "https://www.myspecialhotel.com";
 const DIST = "dist";
 
 const src = fs.readFileSync("src/App.jsx", "utf8");

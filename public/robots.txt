@@ -33,4 +33,4 @@ Allow: /
 User-agent: CCBot
 Allow: /
 
-Sitemap: https://myspecialhotel.com/sitemap.xml
+Sitemap: https://www.myspecialhotel.com/sitemap.xml

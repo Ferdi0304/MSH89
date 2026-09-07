@@ -466,7 +466,7 @@ function HotelCard({ hotel, highlight, quelle }) {
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
           {hotel.tags.map(function(t) { return <span key={t} style={{ background: ACCENT_LIGHT, color: ACCENT, padding: "3px 9px", borderRadius: 8, fontSize: 11, fontFamily: "Inter, sans-serif", fontWeight: 500 }}>{t}</span>; })}
         </div>
-        <a href={url} target="_blank" rel="noopener noreferrer" className="btn-gold" style={{ display: "block", textAlign: "center", padding: "11px 18px", fontSize: 13 }}>Preis &amp; Verfügbarkeit →</a>
+        <a href={url} target="_blank" rel="sponsored nofollow noopener noreferrer" className="btn-gold" style={{ display: "block", textAlign: "center", padding: "11px 18px", fontSize: 13 }}>Preis &amp; Verfügbarkeit →</a>
       </div>
     </div>
   );
@@ -725,7 +725,7 @@ function AIChat() {
             <div style={{ fontSize: 11, color: ACCENT, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>Empfohlene Hotels</div>
             {empfehlungen.map(function(h, i) {
               return (
-                <a key={i} href={h.url} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, background: "#fff", border: "1.5px solid " + BORDER, borderRadius: 14, padding: "14px 16px", textDecoration: "none", transition: "all 0.2s" }} onMouseEnter={function(e){e.currentTarget.style.borderColor=ACCENT;}} onMouseLeave={function(e){e.currentTarget.style.borderColor=BORDER;}}>
+                <a key={i} href={h.url} target="_blank" rel="sponsored nofollow noopener noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, background: "#fff", border: "1.5px solid " + BORDER, borderRadius: 14, padding: "14px 16px", textDecoration: "none", transition: "all 0.2s" }} onMouseEnter={function(e){e.currentTarget.style.borderColor=ACCENT;}} onMouseLeave={function(e){e.currentTarget.style.borderColor=BORDER;}}>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 15, fontWeight: 700, color: TEXT, marginBottom: 2 }}>{h.name}</div>
                     <div style={{ fontSize: 12, color: GRAY }}>{h.stadt}</div>
@@ -737,7 +737,7 @@ function AIChat() {
           </div>
         )}
         {searchLink && !loading && (
-          <a href={searchLink.url} target="_blank" rel="noopener noreferrer" style={{ display: "block", marginTop: 6, background: ACCENT_LIGHT, border: "1px solid #e9d06a", borderRadius: 14, padding: 16, textDecoration: "none" }}>
+          <a href={searchLink.url} target="_blank" rel="sponsored nofollow noopener noreferrer" style={{ display: "block", marginTop: 6, background: ACCENT_LIGHT, border: "1px solid #e9d06a", borderRadius: 14, padding: 16, textDecoration: "none" }}>
             <div style={{ fontSize: 11, color: ACCENT, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>Mehr Auswahl</div>
             <div style={{ fontSize: 15, color: TEXT, fontWeight: 600, marginBottom: 4 }}>Alle Unterkünfte in {searchLink.ort}</div>
             <div style={{ fontSize: 12, color: GRAY }}>Live-Preise und Verfügbarkeit ansehen →</div>
@@ -814,7 +814,7 @@ function TaeglicheListe({ typ }) {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px,1fr))", gap: 20 }} className="hotel-grid">
         {hotels.map(function(h, i) {
           return (
-            <a key={i} href={mitDatum(h.url)} target="_blank" rel="noopener noreferrer"
+            <a key={i} href={mitDatum(h.url)} target="_blank" rel="sponsored nofollow noopener noreferrer"
                className="card"
                style={{ display: "block", background: "#fff", border: "1px solid " + BORDER, borderRadius: 16, overflow: "hidden", textDecoration: "none", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
               <div style={{ position: "relative", height: 150, overflow: "hidden", background: "linear-gradient(135deg,#e8dcc0,#c9a961)" }}>
@@ -898,14 +898,77 @@ function WorldSearch() {
   );
 }
 
+// --- Adressen ------------------------------------------------------------
+// Jede Kategorie und jeder Bereich bekommt eine eigene URL. Ohne das koennte
+// Google nur eine einzige Seite kennen, und nichts waere verlinkbar.
+var ROUTEN = {
+  "/": { tab: "home" },
+  "/ki-berater": { tab: "ai" },
+  "/impressum": { tab: "impressum" },
+  "/datenschutz": { tab: "datenschutz" },
+  "/mein-hotel": { tab: "meinhotel" },
+  "/mein-hotel/boutique-design": { tab: "meinhotel", meinCat: "design" },
+  "/mein-hotel/digitale-nomaden": { tab: "meinhotel", meinCat: "nomad" },
+  "/mein-hotel/hostels": { tab: "meinhotel", meinCat: "hostel" },
+  "/mein-hotel/luxus": { tab: "meinhotel", meinCat: "luxury" },
+  "/mein-hotel/ski-winterurlaub": { tab: "meinhotel", meinCat: "ski" },
+  "/mein-hotel/wellness": { tab: "meinhotel", meinCat: "wellness" }
+};
+var CAT_PFAD = { design: "boutique-design", nomad: "digitale-nomaden", hostel: "hostels", luxury: "luxus", ski: "ski-winterurlaub", wellness: "wellness" };
+
+function leseAdresse() {
+  var p = (typeof window !== "undefined" ? window.location.pathname : "/").replace(/\/+$/, "") || "/";
+  var r = ROUTEN[p] || ROUTEN["/"];
+  return { tab: r.tab, meinCat: r.meinCat || "nomad" };
+}
+
+function baueAdresse(tab, meinCat) {
+  if (tab === "meinhotel") return "/mein-hotel/" + (CAT_PFAD[meinCat] || "digitale-nomaden");
+  if (tab === "ai") return "/ki-berater";
+  if (tab === "impressum") return "/impressum";
+  if (tab === "datenschutz") return "/datenschutz";
+  return "/";
+}
+
 export default function App() {
-  var [tab, setTab] = useState("home");
-  var [cookieAccepted, setCookieAccepted] = useState(
-    typeof window !== "undefined" && localStorage.getItem("msh_cookies") === "true"
-  );
+  var start = leseAdresse();
+  var [tab, setTab] = useState(start.tab);
+  // Erst nach dem ersten Rendern entscheiden, ob das Cookie-Banner noetig ist.
+  // Beim Vorab-Rendern gibt es kein localStorage; stuende die Abfrage direkt im
+  // Anfangswert, waere das Banner fest im erzeugten HTML und wuerde bei
+  // wiederkehrenden Besuchern kurz aufblitzen.
+  var [cookieAccepted, setCookieAccepted] = useState(true);
   var [cat, setCat] = useState("all");
   var [search, setSearch] = useState("");
-  var [meinCat, setMeinCat] = useState("nomad");
+  var [meinCat, setMeinCat] = useState(start.meinCat);
+
+  useEffect(function() {
+    try { setCookieAccepted(localStorage.getItem("msh_cookies") === "true"); }
+    catch (e) { setCookieAccepted(false); }
+  }, []);
+
+  // Zurueck-/Vorwaerts-Taste des Browsers bedienen
+  useEffect(function() {
+    var beiSprung = function() {
+      var z = leseAdresse();
+      setTab(z.tab);
+      setMeinCat(z.meinCat);
+    };
+    window.addEventListener("popstate", beiSprung);
+    return function() { window.removeEventListener("popstate", beiSprung); };
+  }, []);
+
+  // Adresszeile mitfuehren, ohne die Seite neu zu laden
+  function geheZu(neuerTab, neueCat) {
+    var t = neuerTab || tab;
+    var c = neueCat || meinCat;
+    setTab(t);
+    if (neueCat) setMeinCat(c);
+    if (typeof window !== "undefined" && window.history && window.history.pushState) {
+      var pfad = baueAdresse(t, c);
+      if (pfad !== window.location.pathname) window.history.pushState({}, "", pfad);
+    }
+  }
 
   var filtered = HOTELS.filter(function(h) {
     var matchCat = cat === "all" || h.cat === cat;
@@ -939,13 +1002,13 @@ export default function App() {
       <style>{css}</style>
 
       <nav className="nav">
-        <button onClick={function() { setTab("home"); }} className="nav-logo">
+        <button onClick={function() { geheZu("home"); }} className="nav-logo">
           My<span style={{ color: ACCENT }}>Special</span>Hotel
         </button>
         <div className="nav-tabs">
           {TABS.map(function(item) {
             var id = item[0]; var label = item[1];
-            return <button key={id} onClick={function() { setTab(id); }} className={"tab-btn" + (tab === id ? " tab-on" : "")}>{label}</button>;
+            return <button key={id} onClick={function() { geheZu(id); }} className={"tab-btn" + (tab === id ? " tab-on" : "")}>{label}</button>;
           })}
         </div>
       </nav>
@@ -961,7 +1024,7 @@ export default function App() {
               </h1>
               <p style={{ fontSize: 18, color: GRAY, maxWidth: 500, margin: "0 auto 36px", lineHeight: 1.7 }} className="hero-p">Persönliche KI-Beratung und handverlesene Hotels.<br />Ehrlich, unabhängig und kostenlos.</p>
               <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }} className="hero-buttons">
-                <button onClick={function() { setTab("ai"); }} className="btn-gold" style={{ fontSize: 15, padding: "14px 28px", borderRadius: 12, boxShadow: "0 4px 20px rgba(201,150,12,0.3)" }}>KI-Berater starten</button>
+                <button onClick={function() { geheZu("ai"); }} className="btn-gold" style={{ fontSize: 15, padding: "14px 28px", borderRadius: 12, boxShadow: "0 4px 20px rgba(201,150,12,0.3)" }}>KI-Berater starten</button>
               </div>
             </div>
           </div>
@@ -1028,7 +1091,7 @@ export default function App() {
             {MEIN_CATS.map(function(item) {
               var c = item[0]; var l = item[1];
               var aktiv = meinCat === c;
-              return <button key={c} onClick={function() { setMeinCat(c); }} style={{ background: aktiv ? ACCENT : "#fff", border: "1.5px solid " + (aktiv ? ACCENT : BORDER), borderRadius: 24, padding: "10px 24px", color: aktiv ? "#fff" : GRAY, cursor: "pointer", fontFamily: "Inter, sans-serif", fontWeight: aktiv ? 600 : 500, fontSize: 14, transition: "all 0.15s" }}>{l}</button>;
+              return <button key={c} onClick={function() { geheZu("meinhotel", c); }} style={{ background: aktiv ? ACCENT : "#fff", border: "1.5px solid " + (aktiv ? ACCENT : BORDER), borderRadius: 24, padding: "10px 24px", color: aktiv ? "#fff" : GRAY, cursor: "pointer", fontFamily: "Inter, sans-serif", fontWeight: aktiv ? 600 : 500, fontSize: 14, transition: "all 0.15s" }}>{l}</button>;
             })}
           </div>
 
@@ -1055,7 +1118,7 @@ export default function App() {
                 In dieser Kategorie haben wir aktuell noch keine handverlesenen Häuser.
                 Unser KI-Berater findet dir trotzdem passende Unterkünfte.
               </p>
-              <button onClick={function() { setTab("ai"); }} className="btn-gold" style={{ padding: "12px 26px", fontSize: 14 }}>KI-Berater fragen</button>
+              <button onClick={function() { geheZu("ai"); }} className="btn-gold" style={{ padding: "12px 26px", fontSize: 14 }}>KI-Berater fragen</button>
             </div>
           )}
         </div>
@@ -1075,7 +1138,7 @@ export default function App() {
 
       {tab === "impressum" && (
         <div style={{ maxWidth: 800, margin: "0 auto", padding: "48px 24px" }}>
-          <button onClick={function() { setTab("home"); }} style={{ marginBottom: 24, background: "none", border: "1px solid " + BORDER, borderRadius: 8, padding: "8px 16px", cursor: "pointer", color: GRAY, fontFamily: "Inter, sans-serif", fontSize: 13 }}>← Zurück</button>
+          <button onClick={function() { geheZu("home"); }} style={{ marginBottom: 24, background: "none", border: "1px solid " + BORDER, borderRadius: 8, padding: "8px 16px", cursor: "pointer", color: GRAY, fontFamily: "Inter, sans-serif", fontSize: 13 }}>← Zurück</button>
           <h1 className="section-h" style={{ fontFamily: "'Playfair Display', serif", fontSize: 36, fontWeight: 900, color: TEXT, marginBottom: 32 }}>Impressum</h1>
           <h2 style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 8 }}>Angaben gemäß § 5 TMG</h2>
           <p style={{ color: GRAY, lineHeight: 2, fontSize: 15 }}>Fernando Arias Texeira<br />Alsbacher Weg 3<br />14163 Berlin<br />Deutschland</p>
@@ -1097,7 +1160,7 @@ export default function App() {
 
       {tab === "datenschutz" && (
         <div style={{ maxWidth: 800, margin: "0 auto", padding: "48px 24px" }}>
-          <button onClick={function() { setTab("home"); }} style={{ marginBottom: 24, background: "none", border: "1px solid " + BORDER, borderRadius: 8, padding: "8px 16px", cursor: "pointer", color: GRAY, fontFamily: "Inter, sans-serif", fontSize: 13 }}>← Zurück</button>
+          <button onClick={function() { geheZu("home"); }} style={{ marginBottom: 24, background: "none", border: "1px solid " + BORDER, borderRadius: 8, padding: "8px 16px", cursor: "pointer", color: GRAY, fontFamily: "Inter, sans-serif", fontSize: 13 }}>← Zurück</button>
           <h1 className="section-h" style={{ fontFamily: "'Playfair Display', serif", fontSize: 36, fontWeight: 900, color: TEXT, marginBottom: 32 }}>Datenschutzerklärung</h1>
           <h2 style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 8 }}>1. Verantwortlicher</h2>
           <p style={{ color: GRAY, lineHeight: 2, fontSize: 15 }}>Fernando Arias Texeira<br />Alsbacher Weg 3, 14163 Berlin<br />E-Mail: info@myspecialhotel.com<br />Telefon: +49 163 5946140</p>
@@ -1139,9 +1202,9 @@ export default function App() {
         <p>* Affiliate-Links: Bei Buchung über unsere Links erhalten wir eine Provision – für dich entstehen keine Mehrkosten.</p>
         <p style={{ marginTop: 8 }}>
           © 2026 MySpecialHotel.com &nbsp;·&nbsp;
-          <span onClick={function() { setTab("impressum"); }} style={{ cursor: "pointer", textDecoration: "underline", color: ACCENT }}>Impressum</span>
+          <span onClick={function() { geheZu("impressum"); }} style={{ cursor: "pointer", textDecoration: "underline", color: ACCENT }}>Impressum</span>
           &nbsp;·&nbsp;
-          <span onClick={function() { setTab("datenschutz"); }} style={{ cursor: "pointer", textDecoration: "underline", color: ACCENT }}>Datenschutz</span>
+          <span onClick={function() { geheZu("datenschutz"); }} style={{ cursor: "pointer", textDecoration: "underline", color: ACCENT }}>Datenschutz</span>
         </p>
       </footer>
 
@@ -1152,7 +1215,7 @@ export default function App() {
             <p style={{ color: GRAY, fontSize: 13, lineHeight: 1.6 }}>
               Wir nutzen technisch notwendige Cookies. Affiliate-Links zu Booking.com können Tracking-Cookies setzen.
               Mehr dazu in unserer{" "}
-              <span onClick={function() { setTab("datenschutz"); }} style={{ color: ACCENT, cursor: "pointer", textDecoration: "underline" }}>Datenschutzerklärung</span>.
+              <span onClick={function() { geheZu("datenschutz"); }} style={{ color: ACCENT, cursor: "pointer", textDecoration: "underline" }}>Datenschutzerklärung</span>.
             </p>
           </div>
           <div style={{ display: "flex", gap: 10 }}>

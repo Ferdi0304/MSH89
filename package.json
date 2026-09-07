@@ -12,7 +12,10 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/seo.mjs",
     "preview": "vite preview"
+  },
+  "allowScripts": {
+    "esbuild@0.18.20": true
   }
 }

@@ -47,6 +47,7 @@ function seite({ pfad, titel, beschreibung, inhalt, jsonld }) {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="google-site-verification" content="MTtqVeRBOL3urwuH_oMbpfk6I93g6D-fRZZIZVtz-V4" />
     <title>${esc(titel)}</title>
     <meta name="description" content="${esc(beschreibung)}" />
     <link rel="canonical" href="${url}" />

@@ -51,13 +51,22 @@ function seite({ pfad, titel, beschreibung, inhalt, jsonld }) {
     <title>${esc(titel)}</title>
     <meta name="description" content="${esc(beschreibung)}" />
     <link rel="canonical" href="${url}" />
+    <!-- WICHTIG: Diese Datei ueberschreibt die gebaute index.html komplett.
+         Alles, was im Suchergebnis auftauchen soll - auch das Favicon -,
+         muss hier stehen, nicht nur in der index.html im Projektstamm. -->
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" type="image/png" href="/favicon-192.png" sizes="192x192" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="MySpecialHotel" />
     <meta property="og:title" content="${esc(titel)}" />
     <meta property="og:description" content="${esc(beschreibung)}" />
     <meta property="og:url" content="${url}" />
     <meta property="og:locale" content="de_DE" />
-    <meta name="twitter:card" content="summary_large_image" />
+    <meta property="og:image" content="${BASIS}/favicon-192.png" />
+    <!-- "summary" statt "summary_large_image": das Logo ist quadratisch,
+         eine breite Karte wuerde es beschneiden. -->
+    <meta name="twitter:card" content="summary" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <script type="application/ld+json">${JSON.stringify(jsonld)}</script>
@@ -95,6 +104,7 @@ function liste(hotels) {
 const org = {
   "@context": "https://schema.org", "@type": "Organization",
   name: "MySpecialHotel", url: BASIS + "/",
+  logo: BASIS + "/favicon-192.png",
   description: "Redaktionell ausgewählte Hotelempfehlungen für den deutschsprachigen Raum."
 };
 
